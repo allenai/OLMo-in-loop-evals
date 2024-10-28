@@ -1839,4 +1839,4 @@ def build_task(label: str, tokenizer: Tokenizer) -> ICLMultiChoiceTaskDataset:
     task_kwargs = {}
     if isinstance(task_class, tuple):
         task_class, task_kwargs = task_class
-    return task_class(tokenizer=tokenizer, **task_kwargs)
+    return task_class(tokenizer=tokenizer, **task_kwargs)  # type: ignore
