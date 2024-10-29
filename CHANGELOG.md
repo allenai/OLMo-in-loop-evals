@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.2.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.2.0) - 2024-10-29
+
 ### Added
 
 - Added `ICLMultiChoiceTaskDataset.max_sequence_length` property.
