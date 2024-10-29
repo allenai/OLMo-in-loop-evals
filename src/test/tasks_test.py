@@ -13,6 +13,7 @@ def test_build_task(label: str):
     )
     task = build_task(label, tokenizer)
     assert len(task) >= 2
+    assert task.max_sequence_length > 0
     instance1, instance2 = task[0], task[1]
     batch = task.collate_fn([instance1, instance2])
     assert isinstance(batch, dict)

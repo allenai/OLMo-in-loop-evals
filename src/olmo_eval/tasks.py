@@ -57,6 +57,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
         # prep examples
         self.prep_examples()
+        self._max_sequence_length: Optional[int] = None
 
     def __getitem__(self, index):
         return self.samples[index]
@@ -146,6 +147,16 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 tokens = tokens[: self.model_ctx_len]
 
             return tokens
+
+    @property
+    def max_sequence_length(self) -> int:
+        if self._max_sequence_length is None:
+            max_seq_len = 0
+            for sample in self.samples:
+                if len(sample["query"]) > max_seq_len:
+                    max_seq_len = len(sample["query"])
+            self._max_sequence_length = max_seq_len
+        return self._max_sequence_length
 
     def collate_fn(self, data):
         # pad to max length
@@ -1390,6 +1401,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
 
         # prep examples
         self.prep_examples()
+
+        self._max_sequence_length: Optional[int] = None
 
     def prep_examples(self):
         current_doc_id_offset = 0
