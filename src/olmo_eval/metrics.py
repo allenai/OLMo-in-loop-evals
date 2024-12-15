@@ -70,7 +70,8 @@ class ICLMetric(Metric):
                 # gather log-probs at continuation token indices
                 log_likelihood = torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
                 celoss = (
-                    -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum() / batch["cont_str_len"][idx]
+                    -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
+                    / batch["cont_str_len"][idx]
                 )
                 bpb = (
                     -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
@@ -83,7 +84,8 @@ class ICLMetric(Metric):
                     / batch["cont_str_len"][idx]
                 )
                 celoss = (
-                    -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum() / batch["cont_str_len"][idx]
+                    -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
+                    / batch["cont_str_len"][idx]
                 )
                 bpb = (
                     -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
@@ -99,8 +101,12 @@ class ICLMetric(Metric):
                     batch["continuation"][idx].device
                 )
             )
-            self.celosses.append(torch.Tensor((doc_id, cont_id, celoss)).to(batch["continuation"][idx].device))
-            self.bpbs.append(torch.Tensor((doc_id, cont_id, bpb)).to(batch["continuation"][idx].device))
+            self.celosses.append(
+                torch.Tensor((doc_id, cont_id, celoss)).to(batch["continuation"][idx].device)
+            )
+            self.bpbs.append(
+                torch.Tensor((doc_id, cont_id, bpb)).to(batch["continuation"][idx].device)
+            )
             self.labels.append(
                 torch.LongTensor((doc_id, cont_id, batch["label_id"][idx])).to(
                     batch["label_id"][idx].device
@@ -189,11 +195,15 @@ class ICLMetric(Metric):
                 preds.append(torch.argmax(loglikelihoods).item())
                 labels.append(label_dict[doc_id])
             else:
-                correct.append(1.0 if torch.argmax(loglikelihoods).item() == label_dict[doc_id] else 0.0)
+                correct.append(
+                    1.0 if torch.argmax(loglikelihoods).item() == label_dict[doc_id] else 0.0
+                )
                 celoss.append(celosses[label_dict[doc_id]].item())
                 bpb.append(bpbs[label_dict[doc_id]].item())
                 soft_score.append(torch.softmax(loglikelihoods, dim=0)[label_dict[doc_id]].item())
-                soft_log_score.append(torch.log_softmax(loglikelihoods, dim=0)[label_dict[doc_id]].item())
+                soft_log_score.append(
+                    torch.log_softmax(loglikelihoods, dim=0)[label_dict[doc_id]].item()
+                )
 
         if self.metric_type == "f1":
             assert preds is not None

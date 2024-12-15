@@ -1848,7 +1848,11 @@ label_to_task_map = {
 label_to_task_map_new = {
     "arc_challenge_train_rc_5shot": (
         OEEvalTask,
-        {"dataset_path": "arc_challenge", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
+        {
+            "dataset_path": "arc_challenge",
+            "dataset_name": "train_rc_5shot",
+            "metric_type": "len_norm",
+        },
     ),
     "arc_challenge_train_mc_5shot": (
         OEEvalTask,
@@ -1856,7 +1860,11 @@ label_to_task_map_new = {
     ),
     "arc_challenge_val_rc_5shot": (
         OEEvalTask,
-        {"dataset_path": "arc_challenge", "dataset_name": "val_rc_5shot", "metric_type": "len_norm"},
+        {
+            "dataset_path": "arc_challenge",
+            "dataset_name": "val_rc_5shot",
+            "metric_type": "len_norm",
+        },
     ),
     "arc_challenge_val_mc_5shot": (
         OEEvalTask,
@@ -1864,7 +1872,11 @@ label_to_task_map_new = {
     ),
     "arc_challenge_test_rc_5shot": (
         OEEvalTask,
-        {"dataset_path": "arc_challenge", "dataset_name": "test_rc_5shot", "metric_type": "len_norm"},
+        {
+            "dataset_path": "arc_challenge",
+            "dataset_name": "test_rc_5shot",
+            "metric_type": "len_norm",
+        },
     ),
     "arc_challenge_test_mc_5shot": (
         OEEvalTask,
@@ -2016,9 +2028,18 @@ label_to_task_map_new = {
     ),
     "mmlu_stem_val_rc_var": (MMLU, {"dataset_name": "stem", "prompt_variations": 1}),
     "mmlu_stem_val_rc_5shot": (MMLU, {"dataset_name": "stem", "prompt_variations": 2}),
-    "mmlu_stem_val_mc_5shot": (MMLU, {"dataset_name": "stem", "prompt_variations": 2, "mc_labels": True}),
-    "mmlu_stem_test_rc_var": (MMLU, {"dataset_name": "stem", "split": "test", "prompt_variations": 1}),
-    "mmlu_stem_test_rc_5shot": (MMLU, {"dataset_name": "stem", "split": "test", "prompt_variations": 2}),
+    "mmlu_stem_val_mc_5shot": (
+        MMLU,
+        {"dataset_name": "stem", "prompt_variations": 2, "mc_labels": True},
+    ),
+    "mmlu_stem_test_rc_var": (
+        MMLU,
+        {"dataset_name": "stem", "split": "test", "prompt_variations": 1},
+    ),
+    "mmlu_stem_test_rc_5shot": (
+        MMLU,
+        {"dataset_name": "stem", "split": "test", "prompt_variations": 2},
+    ),
     "mmlu_stem_test_mc_5shot": (
         MMLU,
         {"dataset_name": "stem", "split": "test", "prompt_variations": 2, "mc_labels": True},
@@ -2029,7 +2050,10 @@ label_to_task_map_new = {
         MMLU,
         {"dataset_name": "humanities", "prompt_variations": 2, "mc_labels": True},
     ),
-    "mmlu_humanities_test_rc_var": (MMLU, {"dataset_name": "humanities", "split": "test", "prompt_variations": 1}),
+    "mmlu_humanities_test_rc_var": (
+        MMLU,
+        {"dataset_name": "humanities", "split": "test", "prompt_variations": 1},
+    ),
     "mmlu_humanities_test_rc_5shot": (
         MMLU,
         {"dataset_name": "humanities", "split": "test", "prompt_variations": 2},
@@ -2038,8 +2062,14 @@ label_to_task_map_new = {
         MMLU,
         {"dataset_name": "humanities", "split": "test", "prompt_variations": 2, "mc_labels": True},
     ),
-    "mmlu_social_sciences_val_rc_var": (MMLU, {"dataset_name": "social_sciences", "prompt_variations": 1}),
-    "mmlu_social_sciences_val_rc_5shot": (MMLU, {"dataset_name": "social_sciences", "prompt_variations": 2}),
+    "mmlu_social_sciences_val_rc_var": (
+        MMLU,
+        {"dataset_name": "social_sciences", "prompt_variations": 1},
+    ),
+    "mmlu_social_sciences_val_rc_5shot": (
+        MMLU,
+        {"dataset_name": "social_sciences", "prompt_variations": 2},
+    ),
     "mmlu_social_sciences_val_mc_5shot": (
         MMLU,
         {"dataset_name": "social_sciences", "prompt_variations": 2, "mc_labels": True},
@@ -2054,13 +2084,27 @@ label_to_task_map_new = {
     ),
     "mmlu_social_sciences_test_mc_5shot": (
         MMLU,
-        {"dataset_name": "social_sciences", "split": "test", "prompt_variations": 2, "mc_labels": True},
+        {
+            "dataset_name": "social_sciences",
+            "split": "test",
+            "prompt_variations": 2,
+            "mc_labels": True,
+        },
     ),
     "mmlu_other_val_rc_var": (MMLU, {"dataset_name": "other", "prompt_variations": 1}),
     "mmlu_other_val_rc_5shot": (MMLU, {"dataset_name": "other", "prompt_variations": 2}),
-    "mmlu_other_val_mc_5shot": (MMLU, {"dataset_name": "other", "prompt_variations": 2, "mc_labels": True}),
-    "mmlu_other_test_rc_var": (MMLU, {"dataset_name": "other", "split": "test", "prompt_variations": 1}),
-    "mmlu_other_test_rc_5shot": (MMLU, {"dataset_name": "other", "split": "test", "prompt_variations": 2}),
+    "mmlu_other_val_mc_5shot": (
+        MMLU,
+        {"dataset_name": "other", "prompt_variations": 2, "mc_labels": True},
+    ),
+    "mmlu_other_test_rc_var": (
+        MMLU,
+        {"dataset_name": "other", "split": "test", "prompt_variations": 1},
+    ),
+    "mmlu_other_test_rc_5shot": (
+        MMLU,
+        {"dataset_name": "other", "split": "test", "prompt_variations": 2},
+    ),
     "mmlu_other_test_mc_5shot": (
         MMLU,
         {"dataset_name": "other", "split": "test", "prompt_variations": 2, "mc_labels": True},
