@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.4.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.4.0) - 2024-12-18
+
+### Added
+
+- Added more downstream tasks from the model ladder.
+
 ## [v0.3.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.3.0) - 2024-12-18
 
 ### Added
