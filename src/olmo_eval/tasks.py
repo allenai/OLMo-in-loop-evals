@@ -1,7 +1,7 @@
 import abc
 import logging
 import re
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union, cast
 
 import datasets
 import torch
@@ -26,6 +26,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         dataset_path: str,
         dataset_name: Union[str, Sequence[str], None] = None,
         model_ctx_len: int = 2048,
+        fixed_ctx_len: bool = False,
         split="validation",
         metric_type=None,  # Override default metric type
         prompts: Optional[List[Optional[str]]] = None,  # List of prompt variants to use
@@ -36,6 +37,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         self.dataset_path = dataset_path
         self.dataset_name = dataset_name
         self.model_ctx_len = model_ctx_len
+        self.fixed_ctx_len = fixed_ctx_len
         self.prompts = prompts or [None]
         self.current_prompt: Optional[str] = None
         if metric_type is not None:
@@ -213,7 +215,12 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             cont_byte_lens.append(sample["cont_byte_len"])
 
             queries.append(
-                torch.LongTensor(self.pad_tokens_until_max(sample["query"], max_len=max_query_len))
+                torch.LongTensor(
+                    self.pad_tokens_until_max(
+                        sample["query"],
+                        max_len=self.model_ctx_len if self.fixed_ctx_len else max_query_len,
+                    )
+                )
             )
             dc_queries.append(
                 torch.LongTensor(
@@ -298,11 +305,13 @@ class PIQA(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="piqa",
         dataset_name="plain_text",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -341,11 +350,13 @@ class HellaSwag(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="hellaswag",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     @classmethod
@@ -406,12 +417,14 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="winogrande",
         dataset_name="winogrande_xl",
+        **kwargs,
     ):
         # all winogrande datasets have same val set
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def prep_examples(self):
@@ -508,11 +521,13 @@ class OpenBookQA(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="openbookqa",
         dataset_name="main",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -548,11 +563,13 @@ class BoolQ(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="boolq",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -598,11 +615,13 @@ class SciQ(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="sciq",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -645,11 +664,13 @@ class ArcEasy(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path: str = "ai2_arc",
         dataset_name: Optional[str] = "ARC-Easy",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -685,11 +706,13 @@ class ArcChallenge(ArcEasy):
         tokenizer,
         dataset_path="ai2_arc",
         dataset_name="ARC-Challenge",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
 
@@ -726,11 +749,13 @@ class BasicArithmetic(ArcEasy):
         tokenizer,
         dataset_path="allenai/basic_arithmetic",
         dataset_name: Optional[str] = None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
 
@@ -752,11 +777,13 @@ class CommonsenseQA(ArcEasy):
         tokenizer,
         dataset_path="tau/commonsense_qa",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
 
@@ -777,11 +804,13 @@ class SocialIQa(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="social_i_qa",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -830,11 +859,13 @@ class COPA(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="super_glue",
         dataset_name="copa",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -877,11 +908,13 @@ class RTE(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="glue",
         dataset_name="rte",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -921,11 +954,13 @@ class CommitmentBank(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="super_glue",
         dataset_name="cb",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -968,11 +1003,13 @@ class MRPC(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="glue",
         dataset_name="mrpc",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     @classmethod
@@ -1038,11 +1075,13 @@ class SST2(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="glue",
         dataset_name="sst2",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     @classmethod
@@ -1168,6 +1207,7 @@ class MMLU(ICLMultiChoiceTaskDataset):
         prompt_variations=None,
         mc_labels=False,
         metric_type=None,
+        **kwargs,
     ):
         dataset_names = []
         # Collect the relevant categories
@@ -1203,6 +1243,7 @@ class MMLU(ICLMultiChoiceTaskDataset):
             split=split,
             prompts=prompts,
             metric_type=metric_type,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -1288,11 +1329,13 @@ class TriviaQACELoss(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="trivia_qa",
         dataset_name="rc.wikipedia.nocontext",
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -1326,11 +1369,13 @@ class NaturalQuestionsCELoss(ICLMultiChoiceTaskDataset):
         tokenizer,
         dataset_path="nq_open",
         dataset_name=None,
+        **kwargs,
     ):
         super().__init__(
             tokenizer=tokenizer,
             dataset_path=dataset_path,
             dataset_name=dataset_name,
+            **kwargs,
         )
 
     def doc_to_text(self, doc):
@@ -1357,6 +1402,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         dataset_path: str,
         dataset_name: Union[str, Sequence[str], None] = None,
         model_ctx_len: int = 2048,
+        fixed_ctx_len: bool = False,
         split=None,
         metric_type=None,
         prompts: Optional[List[Optional[str]]] = None,  # List of prompt variants to use
@@ -1367,6 +1413,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         self.dataset_path = dataset_path
         self.dataset_name = dataset_name
         self.model_ctx_len = model_ctx_len
+        self.fixed_ctx_len = fixed_ctx_len
         self.log_instances = 0  # Set to > 0 to log the first few instances as a sanity check
 
         self.samples: List[Dict[str, Any]] = []
@@ -1847,9 +1894,11 @@ def list_tasks() -> List[str]:
     return list(label_to_task_map.keys())
 
 
-def build_task(label: str, tokenizer: Tokenizer) -> ICLMultiChoiceTaskDataset:
+def build_task(label: str, tokenizer: Tokenizer, **kwargs) -> ICLMultiChoiceTaskDataset:
     task_class = label_to_task_map[label]
     task_kwargs = {}
     if isinstance(task_class, tuple):
         task_class, task_kwargs = task_class
-    return task_class(tokenizer=tokenizer, **task_kwargs)  # type: ignore
+    return cast(Type[ICLMultiChoiceTaskDataset], task_class)(
+        tokenizer=tokenizer, **task_kwargs, **kwargs
+    )
