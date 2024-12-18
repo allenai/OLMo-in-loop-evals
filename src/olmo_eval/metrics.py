@@ -155,6 +155,10 @@ class ICLMetric(Metric):
 
         log.warning(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
 
+        from olmo_core.distributed.utils import barrier
+
+        barrier()
+
         if self.metric_type == "f1":
             assert preds is not None
             assert labels is not None
