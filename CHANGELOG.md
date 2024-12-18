@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.3.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.3.0) - 2024-12-18
+
 ### Added
 
 - Allowed passing additional kwargs to the task through `build_task()`.
