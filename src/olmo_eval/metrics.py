@@ -1,15 +1,25 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import f1_score
 from torchmetrics import Metric
 
+from .util import all_gather_object
+
 LOG_2_OF_E = 1.44269504089
 
 
 log = logging.getLogger(__name__)
+
+
+T = TypeVar("T")
+
+
+def dist_combine_lists(x: List[T]) -> List[T]:
+    all_lists = all_gather_object(x)
+    return [item for sublist in all_lists for item in sublist]
 
 
 class ICLMetric(Metric):
@@ -22,10 +32,24 @@ class ICLMetric(Metric):
 
         self.metric_type = metric_type
 
-        self.add_state("loglikelihoods", default=[], dist_reduce_fx=None)
-        self.add_state("labels", default=[], dist_reduce_fx=None)
+        self.add_state("loglikelihoods", default=[], dist_reduce_fx=dist_combine_lists)
+        self.add_state("labels", default=[], dist_reduce_fx=dist_combine_lists)
 
-    def update(self, batch: Dict[str, Any], lm_logits: torch.Tensor, dc_lm_logits=None):
+    def reset(self):
+        self.loglikelihoods: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
+        self.labels: List[Tuple[Optional[int], Optional[int], Optional[int]]] = []
+
+    def update(
+        self,
+        batch: Dict[str, Any],
+        lm_logits: Optional[torch.Tensor] = None,
+        dc_lm_logits: Optional[torch.Tensor] = None,
+    ):
+        if lm_logits is None:
+            self.loglikelihoods.append((None, None, None))
+            self.labels.append((None, None, None))
+            return
+
         lm_logits = F.log_softmax(lm_logits, dim=-1)
 
         if self.metric_type == "pmi_dc":
@@ -77,37 +101,33 @@ class ICLMetric(Metric):
                 raise ValueError(self.metric_type)
 
             # because metric states cannot be dict/list of tuples, store this tuple as tensor: (doc_id, cont_id, metric_state)
-            self.loglikelihoods.append(
-                torch.Tensor((doc_id, cont_id, log_likelihood)).to(
-                    batch["continuation"][idx].device
-                )
-            )
-            self.labels.append(
-                torch.LongTensor((doc_id, cont_id, batch["label_id"][idx])).to(
-                    batch["label_id"][idx].device
-                )
-            )
+            self.loglikelihoods.append((int(doc_id), int(cont_id), float(log_likelihood)))
+            self.labels.append((int(doc_id), int(cont_id), int(batch["label_id"][idx])))
 
     def compute(self) -> torch.Tensor:
-        print("computing...")
-
         # states should have been synced from all accelerators at this point
         # account for duplicates here because of DistributedSampler compensating for drop_last=False
         loglikelihood_dict: Dict[int, Dict[int, float]] = {}
-        label_dict = {}
+        label_dict: Dict[int, int] = {}
 
         # collect labels
         for doc_id, cont_id, label_id in self.labels:
-            if doc_id.item() not in label_dict:
-                label_dict[doc_id.item()] = label_id.item()
+            if doc_id is None or cont_id is None or label_id is None:
+                continue
+
+            if doc_id not in label_dict:
+                label_dict[doc_id] = label_id
 
         # collect loglikelihoods
         for doc_id, cont_id, loglikelihood in self.loglikelihoods:
-            if int(doc_id.item()) not in loglikelihood_dict:
-                loglikelihood_dict[int(doc_id.item())] = {}
+            if doc_id is None or cont_id is None or loglikelihood is None:
+                continue
 
-            if int(cont_id.item()) not in loglikelihood_dict[int(doc_id.item())]:
-                loglikelihood_dict[int(doc_id.item())][int(cont_id.item())] = loglikelihood
+            if doc_id not in loglikelihood_dict:
+                loglikelihood_dict[doc_id] = {}
+
+            if cont_id not in loglikelihood_dict[doc_id]:
+                loglikelihood_dict[doc_id][cont_id] = loglikelihood
 
         # compute acc
         correct = []
@@ -117,8 +137,6 @@ class ICLMetric(Metric):
             preds = []
             labels = []
 
-        print(f"Computing metrics over {len(loglikelihood_dict):,d} documents...")
-        n_skipped = 0
         for doc_id in loglikelihood_dict:
             # each doc_id might have a different number of continuation
             num_continuations = len(loglikelihood_dict[doc_id].keys())
@@ -134,8 +152,8 @@ class ICLMetric(Metric):
                     break
 
             if skip_document:
-                n_skipped += 0
                 continue
+
             if self.metric_type in ["ce_loss", "bpb"]:
                 correct.append(loglikelihoods[0])  # Only one answer is scored
             else:
@@ -148,15 +166,6 @@ class ICLMetric(Metric):
                 assert labels is not None
                 preds.append(torch.argmax(loglikelihoods).item())
                 labels.append(label_dict[doc_id])
-
-        print(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
-
-        import time
-
-        from olmo_core.distributed.utils import barrier
-
-        barrier()
-        time.sleep(2)
 
         if self.metric_type == "f1":
             assert preds is not None

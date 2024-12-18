@@ -3,10 +3,11 @@ import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator, List, Optional, TypeVar
 
 import datasets
 import importlib_resources
+import torch.distributed as dist
 from importlib_resources.abc import Traversable
 
 
@@ -78,3 +79,38 @@ def load_oe_eval_requests(path: str, name: Optional[str] = None, split: Optional
             with open(config_file, "r") as file:
                 config = json.load(file)
         return config, requests
+
+
+def is_distributed() -> bool:
+    """
+    Check if in a distributed context.
+    """
+    return dist.is_available() and dist.is_initialized()
+
+
+def get_world_size(group: Optional[dist.ProcessGroup] = None) -> int:
+    """
+    Get the world size of the default distributed process group.
+
+    .. warning::
+        This will always return 1 if a distributed group has not been initialized.
+    """
+    if is_distributed():
+        return dist.get_world_size(group)
+    else:
+        return 0
+
+
+T = TypeVar("T")
+
+
+def all_gather_object(obj: T, group: Optional[dist.ProcessGroup] = None) -> List[T]:
+    """
+    All-gather an object using pickle to all ranks in a process group.
+    """
+    if not is_distributed():
+        return [obj]
+
+    output_list = [obj] * get_world_size(group)
+    dist.all_gather_object(output_list, obj, group=group)
+    return output_list
