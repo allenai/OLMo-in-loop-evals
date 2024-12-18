@@ -45,6 +45,9 @@ class ICLMetric(Metric):
         lm_logits: Optional[torch.Tensor] = None,
         dc_lm_logits: Optional[torch.Tensor] = None,
     ):
+        # NOTE: `lm_logits` could be none for some ranks if using pipeline parallelism. We still
+        # need to add something to these state lists though in order for them to get synchronized
+        # for reasons not clear to me other than the fact that torchmetrics is jenky a.f.
         if lm_logits is None:
             self.loglikelihoods.append((None, None, None))
             self.labels.append((None, None, None))
