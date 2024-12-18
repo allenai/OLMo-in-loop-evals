@@ -1894,11 +1894,16 @@ def list_tasks() -> List[str]:
     return list(label_to_task_map.keys())
 
 
-def build_task(label: str, tokenizer: Tokenizer, **kwargs) -> ICLMultiChoiceTaskDataset:
+def build_task(
+    label: str,
+    tokenizer: Tokenizer,
+    model_ctx_len: int = 2048,
+    fixed_ctx_len: bool = False,
+) -> ICLMultiChoiceTaskDataset:
     task_class = label_to_task_map[label]
     task_kwargs = {}
     if isinstance(task_class, tuple):
         task_class, task_kwargs = task_class
     return cast(Type[ICLMultiChoiceTaskDataset], task_class)(
-        tokenizer=tokenizer, **task_kwargs, **kwargs
+        tokenizer=tokenizer, model_ctx_len=model_ctx_len, fixed_ctx_len=fixed_ctx_len, **task_kwargs
     )
