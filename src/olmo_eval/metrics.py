@@ -89,6 +89,8 @@ class ICLMetric(Metric):
             )
 
     def compute(self) -> torch.Tensor:
+        print("computing...")
+
         # states should have been synced from all accelerators at this point
         # account for duplicates here because of DistributedSampler compensating for drop_last=False
         loglikelihood_dict: Dict[int, Dict[int, float]] = {}
@@ -149,9 +151,12 @@ class ICLMetric(Metric):
 
         print(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
 
+        import time
+
         from olmo_core.distributed.utils import barrier
 
         barrier()
+        time.sleep(2)
 
         if self.metric_type == "f1":
             assert preds is not None
