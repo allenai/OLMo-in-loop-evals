@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -6,6 +7,9 @@ from sklearn.metrics import f1_score
 from torchmetrics import Metric
 
 LOG_2_OF_E = 1.44269504089
+
+
+log = logging.getLogger(__name__)
 
 
 class ICLMetric(Metric):
@@ -117,6 +121,8 @@ class ICLMetric(Metric):
             preds = []
             labels = []
 
+        log.warning(f"Computing metrics over {len(loglikelihood_dict):,d} documents...")
+        n_skipped = 0
         for doc_id in loglikelihood_dict:
             # each doc_id might have a different number of continuation
             num_continuations = len(loglikelihood_dict[doc_id].keys())
@@ -132,6 +138,7 @@ class ICLMetric(Metric):
                     break
 
             if skip_document:
+                n_skipped += 0
                 continue
             if self.metric_type in ["ce_loss", "bpb"]:
                 correct.append(loglikelihoods[0])  # Only one answer is scored
@@ -145,6 +152,8 @@ class ICLMetric(Metric):
                 assert labels is not None
                 preds.append(torch.argmax(loglikelihoods).item())
                 labels.append(label_dict[doc_id])
+
+        log.warning(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
 
         if self.metric_type == "f1":
             assert preds is not None
