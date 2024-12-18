@@ -25,12 +25,6 @@ class ICLMetric(Metric):
         self.add_state("loglikelihoods", default=[], dist_reduce_fx=None)
         self.add_state("labels", default=[], dist_reduce_fx=None)
 
-    def reset(
-        self,
-    ):
-        self.loglikelihoods = []
-        self.labels = []
-
     def update(self, batch: Dict[str, Any], lm_logits: torch.Tensor, dc_lm_logits=None):
         lm_logits = F.log_softmax(lm_logits, dim=-1)
 
@@ -121,7 +115,7 @@ class ICLMetric(Metric):
             preds = []
             labels = []
 
-        log.warning(f"Computing metrics over {len(loglikelihood_dict):,d} documents...")
+        print(f"Computing metrics over {len(loglikelihood_dict):,d} documents...")
         n_skipped = 0
         for doc_id in loglikelihood_dict:
             # each doc_id might have a different number of continuation
@@ -153,7 +147,7 @@ class ICLMetric(Metric):
                 preds.append(torch.argmax(loglikelihoods).item())
                 labels.append(label_dict[doc_id])
 
-        log.warning(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
+        print(f"Skipped {n_skipped:,d} documents due to unprocessed continuations")
 
         from olmo_core.distributed.utils import barrier
 
