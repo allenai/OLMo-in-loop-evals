@@ -1893,18 +1893,6 @@ label_to_task_map = {
 # Train and test sets are added when applicable.
 # No subsampling happens in these sets.
 label_to_task_map_new = {
-    "arc_challenge_train_rc_5shot": (
-        OEEvalTask,
-        {
-            "dataset_path": "arc_challenge",
-            "dataset_name": "train_rc_5shot",
-            "metric_type": "len_norm",
-        },
-    ),
-    "arc_challenge_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "arc_challenge", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "arc_challenge_val_rc_5shot": (
         OEEvalTask,
         {
@@ -1929,14 +1917,6 @@ label_to_task_map_new = {
         OEEvalTask,
         {"dataset_path": "arc_challenge", "dataset_name": "test_mc_5shot", "metric_type": "acc"},
     ),
-    "arc_easy_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "arc_easy", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),  # this used to be acc
-    "arc_easy_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "arc_easy", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "arc_easy_val_rc_5shot": (
         OEEvalTask,
         {"dataset_path": "arc_easy", "dataset_name": "val_rc_5shot", "metric_type": "len_norm"},
@@ -1953,14 +1933,6 @@ label_to_task_map_new = {
         OEEvalTask,
         {"dataset_path": "arc_easy", "dataset_name": "test_mc_5shot", "metric_type": "acc"},
     ),
-    "boolq_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "boolq", "dataset_name": "train_rc_5shot", "metric_type": "acc"},
-    ),  # kept acc here, since len_norm can bias towards "yes"
-    "boolq_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "boolq", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "boolq_val_rc_5shot": (
         OEEvalTask,
         {"dataset_path": "boolq", "dataset_name": "val_rc_5shot", "metric_type": "acc"},
@@ -1968,14 +1940,6 @@ label_to_task_map_new = {
     "boolq_val_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "boolq", "dataset_name": "val_mc_5shot", "metric_type": "acc"},
-    ),
-    "csqa_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "csqa", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),
-    "csqa_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "csqa", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
     ),
     "csqa_val_rc_5shot": (
         OEEvalTask,
@@ -1985,14 +1949,6 @@ label_to_task_map_new = {
         OEEvalTask,
         {"dataset_path": "csqa", "dataset_name": "val_mc_5shot", "metric_type": "acc"},
     ),
-    "hellaswag_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "hellaswag", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),
-    "hellaswag_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "hellaswag", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "hellaswag_val_rc_5shot": (
         OEEvalTask,
         {"dataset_path": "hellaswag", "dataset_name": "val_rc_5shot", "metric_type": "len_norm"},
@@ -2000,14 +1956,6 @@ label_to_task_map_new = {
     "hellaswag_val_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "hellaswag", "dataset_name": "val_mc_5shot", "metric_type": "acc"},
-    ),
-    "openbookqa_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "openbookqa", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),
-    "openbookqa_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "openbookqa", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
     ),
     "openbookqa_val_rc_5shot": (
         OEEvalTask,
@@ -2025,14 +1973,6 @@ label_to_task_map_new = {
         OEEvalTask,
         {"dataset_path": "openbookqa", "dataset_name": "test_mc_5shot", "metric_type": "acc"},
     ),
-    "piqa_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "piqa", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),
-    "piqa_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "piqa", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "piqa_val_rc_5shot": (
         OEEvalTask,
         {"dataset_path": "piqa", "dataset_name": "val_rc_5shot", "metric_type": "len_norm"},
@@ -2041,14 +1981,6 @@ label_to_task_map_new = {
         OEEvalTask,
         {"dataset_path": "piqa", "dataset_name": "val_mc_5shot", "metric_type": "acc"},
     ),
-    "socialiqa_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "socialiqa", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),
-    "socialiqa_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "socialiqa", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
-    ),
     "socialiqa_val_rc_5shot": (
         OEEvalTask,
         {"dataset_path": "socialiqa", "dataset_name": "val_rc_5shot", "metric_type": "len_norm"},
@@ -2056,14 +1988,6 @@ label_to_task_map_new = {
     "socialiqa_val_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "socialiqa", "dataset_name": "val_mc_5shot", "metric_type": "acc"},
-    ),
-    "winogrande_train_rc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "winogrande", "dataset_name": "train_rc_5shot", "metric_type": "len_norm"},
-    ),  # this used to be acc
-    "winogrande_train_mc_5shot": (
-        OEEvalTask,
-        {"dataset_path": "winogrande", "dataset_name": "train_mc_5shot", "metric_type": "acc"},
     ),
     "winogrande_val_rc_5shot": (
         OEEvalTask,
