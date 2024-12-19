@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.5.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.5.0) - 2024-12-18
+
 ### Changed
 
 - You can pass `None` for `lm_logits` in `ICLMetric.update()` to support pipeline parallelism.
