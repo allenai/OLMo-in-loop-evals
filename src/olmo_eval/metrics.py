@@ -160,30 +160,29 @@ class ICLMetric(Metric):
                 loglikelihood_dict[doc_id][cont_id] = loglikelihood
 
         # collect celosses
-        for doc_id, cont_id, celoss in self.celosses:
-            if doc_id is None or cont_id is None or celoss is None:
+        for doc_id, cont_id, celoss_val in self.celosses:
+            if doc_id is None or cont_id is None or celoss_val is None:
                 continue
 
             if doc_id not in celoss_dict:
                 celoss_dict[doc_id] = {}
 
             if cont_id not in celoss_dict[doc_id]:
-                celoss_dict[doc_id][cont_id] = celoss
+                celoss_dict[doc_id][cont_id] = celoss_val
 
         # collect bpbs
-        for doc_id, cont_id, bpb in self.bpbs:
-            if doc_id is None or cont_id is None or bpb is None:
+        for doc_id, cont_id, bpb_val in self.bpbs:
+            if doc_id is None or cont_id is None or bpb_val is None:
                 continue
 
             if doc_id not in bpb_dict:
                 bpb_dict[doc_id] = {}
 
             if cont_id not in bpb_dict[doc_id]:
-                bpb_dict[doc_id][cont_id] = bpb
+                bpb_dict[doc_id][cont_id] = bpb_val
 
         # compute acc
         correct = []
-        loglikelihood = []
         celoss = []
         bpb = []
         soft_score = []
