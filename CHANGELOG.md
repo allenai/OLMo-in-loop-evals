@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Ensure queries are always a multiple of 128.
+
 ## [v0.6.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.6.0) - 2024-12-19
 
 ## [v0.5.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.5.0) - 2024-12-18
