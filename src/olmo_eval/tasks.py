@@ -188,11 +188,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         # Pad to multiple of 128 for efficiency.
         # TODO (epwalsh): make that configurable
         max_query_len = 128 * math.ceil(max_query_len / 128)
-
-        if self._max_sequence_length is None:
-            self._max_sequence_length = max_query_len
-        else:
-            assert self._max_sequence_length == max_query_len
+        assert max_query_len <= self.max_sequence_length
 
         doc_ids = []
         cont_ids = []
