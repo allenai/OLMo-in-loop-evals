@@ -1,5 +1,6 @@
 import abc
 import logging
+import math
 import re
 from typing import Any, Dict, List, Optional, Sequence, Type, Union, cast
 
@@ -157,6 +158,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             for sample in self.samples:
                 if len(sample["query"]) > max_seq_len:
                     max_seq_len = len(sample["query"])
+            # Pad to multiple of 128 for efficiency.
+            # TODO (epwalsh): make that configurable
+            max_seq_len = 128 * math.ceil(max_seq_len / 128)
             self._max_sequence_length = max_seq_len
         return self._max_sequence_length
 
@@ -180,6 +184,15 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
             if len(sample["dc_query"]) > max_dc_query_len:
                 max_dc_query_len = len(sample["dc_query"])
+
+        # Pad to multiple of 128 for efficiency.
+        # TODO (epwalsh): make that configurable
+        max_query_len = 128 * math.ceil(max_query_len / 128)
+
+        if self._max_sequence_length is None:
+            self._max_sequence_length = max_query_len
+        else:
+            assert self._max_sequence_length == max_query_len
 
         doc_ids = []
         cont_ids = []
