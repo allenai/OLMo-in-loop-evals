@@ -2118,9 +2118,9 @@ LABEL_TO_TASK_MAP_EXPANDED = {
         OEEvalTask,
         {"dataset_path": "codex_humaneval", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"},
     ),
-    "mbpp_gold_bpb_0shot": (
+    "codex_mbpp_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "mbpp", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"},
+        {"dataset_path": "codex_mbpp", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"},
     ),
     "minerva_math_algebra_gold_bpb_0shot": (
         OEEvalTask,
