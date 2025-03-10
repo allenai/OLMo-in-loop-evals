@@ -14,10 +14,10 @@ log = logging.getLogger(__name__)
 
 # Map from oe-eval metrics to metrics used here
 METRIC_FROM_OE_EVAL = {
-    "acc_raw": "acc", 
-    "acc_per_char": "len_norm", 
-    "acc_uncond": "pmi_dc", 
-    "logits_per_byte": "bpb"
+    "acc_raw": "acc",
+    "acc_per_char": "len_norm",
+    "acc_uncond": "pmi_dc",
+    "logits_per_byte": "bpb",
 }
 
 
@@ -168,7 +168,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             max_seq_len = 128 * math.ceil(max_seq_len / 128)
             self._max_sequence_length = max_seq_len
 
-        assert self._max_sequence_length != 0, f'Max sequence length for "{self.dataset_name}" cannot be 0. Found {self.samples} samples.'
+        assert (
+            self._max_sequence_length != 0
+        ), f'Max sequence length for "{self.dataset_name}" cannot be 0. Found {self.samples} samples.'
 
         return self._max_sequence_length
 
@@ -1484,7 +1486,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 if doc_id > max_doc_id:
                     max_doc_id = doc_id
                 assert (
-                    request["request_type"] == "loglikelihood" or request["request_type"] == "generate_until_and_loglikelihood"
+                    request["request_type"] == "loglikelihood"
+                    or request["request_type"] == "generate_until_and_loglikelihood"
                 ), f"Unsupported request type: {request['request_type']}"
 
                 # from EAI harness
@@ -1767,7 +1770,6 @@ LABEL_TO_TASK_MAP_ORIG = {
         OEEvalTask,
         {"dataset_path": "winogrande", "dataset_name": "rc_5shot", "metric_type": "acc"},
     ),
-
     # (DEPRICATED) BPB-only versions of the above tasks. By default, in-loop evals will calculate
     # the BPB and accuracy metrics, so there is no need to use these keys. We keep them for
     # backwards compatibility.
@@ -2114,39 +2116,67 @@ LABEL_TO_TASK_MAP_EXPANDED = {
     ),
     "codex_humaneval_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "codex_humaneval", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {"dataset_path": "codex_humaneval", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"},
     ),
     "mbpp_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "mbpp", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {"dataset_path": "mbpp", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"},
     ),
     "minerva_math_algebra_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_algebra", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_algebra",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_counting_and_probability_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_counting_and_probability", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_counting_and_probability",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_geometry_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_geometry", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_geometry",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_intermediate_algebra_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_intermediate_algebra", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_intermediate_algebra",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_number_theory_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_number_theory", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_number_theory",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_prealgebra_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_prealgebra", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_prealgebra",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
     "minerva_math_precalculus_gold_bpb_0shot": (
         OEEvalTask,
-        {"dataset_path": "minerva_math_precalculus", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}
+        {
+            "dataset_path": "minerva_math_precalculus",
+            "dataset_name": "gold_bpb_0shot",
+            "metric_type": "bpb",
+        },
     ),
 }
 
@@ -2169,10 +2199,12 @@ def build_task(
     fixed_ctx_len: bool = False,
 ) -> ICLMultiChoiceTaskDataset:
     if label not in LABEL_TO_TASK_MAP.keys():
-        raise KeyError(f'\
+        raise KeyError(
+            f'\
             Downstream evaluation config "{label}" not found in available configuraitons. \
             Please specify tasks in the available configurations: {LABEL_TO_TASK_MAP}\
-        ')
+        '
+        )
     task_class = LABEL_TO_TASK_MAP[label]
     task_kwargs = {}
     if isinstance(task_class, tuple):
