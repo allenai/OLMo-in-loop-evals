@@ -103,8 +103,15 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                     )
 
                 for cont_id, continuation_str in enumerate(continuations):
-                    cont_str_len = len(continuation_str) - 1  # continuation contain leading blank
-                    cont_byte_len = len(continuation_str[1:].encode("utf-8"))
+                    # The original implementation did not count the first character (usually the leading space) as
+                    # part of the continuation length (e.g., " A", " " is not counted). The OLMES standard does not
+                    # do this, but we track both for backwards compatibility.
+                    cont_str_len_no_leading_space = len(continuation_str) - 1
+                    cont_byte_len_no_leading_space = len(continuation_str[1:].encode("utf-8"))
+
+                    cont_str_len = len(continuation_str)
+                    cont_byte_len = len(continuation_str.encode("utf-8"))
+
                     continuation = self.token_encode(continuation_str)
 
                     # query, remove last token from continuation, truncate from left is longer than model ctx length
@@ -131,6 +138,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                             ),  # even if query has last token removed, LM will output same cont len
                             "cont_str_len": cont_str_len,
                             "cont_byte_len": cont_byte_len,
+                            "cont_str_len_no_leading_space": cont_str_len_no_leading_space,
+                            "cont_byte_len_no_leading_space": cont_byte_len_no_leading_space,
                             "query": query,  # remove last token from continuation
                             "dc_query": dc_query,
                             "label_id": label_id,
@@ -1524,8 +1533,16 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         f"Sample doc from ({self.dataset_path}, {ds_name}):"
                         + f"\ndoc_text: {doc_text}\ncontinuation: {continuation_str}"
                     )
+
+                # The original implementation did not count the first character (usually the leading space) as
+                # part of the continuation length (e.g., " A", " " is not counted). The OLMES standard does not
+                # do this, but we track both for backwards compatibility.
+                cont_str_len_no_leading_space = len(continuation_str) - 1
+                cont_byte_len_no_leading_space = len(continuation_str[1:].encode("utf-8"))
+
                 cont_str_len = len(continuation_str)
                 cont_byte_len = len(continuation_str.encode("utf-8"))
+
                 continuation = self.token_encode(continuation_str)
 
                 # query, remove last token from continuation, truncate from left is longer than model ctx length
@@ -1552,6 +1569,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         ),  # even if query has last token removed, LM will output same cont len
                         "cont_str_len": cont_str_len,
                         "cont_byte_len": cont_byte_len,
+                        "cont_str_len_no_leading_space": cont_str_len_no_leading_space,
+                        "cont_byte_len_no_leading_space": cont_byte_len_no_leading_space,
                         "query": query,  # remove last token from continuation
                         "dc_query": dc_query,
                         "label_id": label_id,
