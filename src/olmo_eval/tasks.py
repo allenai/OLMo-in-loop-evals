@@ -471,8 +471,15 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
 
             continuation_str = self.doc_to_continuations(doc)
             label_id = self.doc_to_label(doc)
-            cont_str_len = len(continuation_str) - 1  # continuations contain leading blank space
-            cont_byte_len = len(continuation_str[1:].encode("utf-8"))
+
+            # The original implementation did not count the first character (usually the leading space) as
+            # part of the continuation length (e.g., " A", " " is not counted). The OLMES standard does not
+            # do this, but we track both for backwards compatibility.
+            cont_str_len_no_leading_space = len(continuation_str) - 1
+            cont_byte_len_no_leading_space = len(continuation_str[1:].encode("utf-8"))
+
+            cont_str_len = len(continuation_str)
+            cont_byte_len = len(continuation_str.encode("utf-8"))
 
             # tokenize
             continuation = self.token_encode(continuation_str)
@@ -503,6 +510,8 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
                         ),  # even if query has last token removed, LM will output same cont len
                         "cont_str_len": cont_str_len,
                         "cont_byte_len": cont_byte_len,
+                        "cont_str_len_no_leading_space": cont_str_len_no_leading_space,
+                        "cont_byte_len_no_leading_space": cont_byte_len_no_leading_space,
                         "query": query,  # remove last token from continuation
                         "dc_query": dc_query,
                         "label_id": label_id,

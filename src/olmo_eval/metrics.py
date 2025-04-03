@@ -101,6 +101,9 @@ class ICLMetric(Metric):
             log_likelihood: torch.Tensor
             celoss: torch.Tensor
             bpb: torch.Tensor
+            log_likelihood_no_leading_space: torch.Tensor
+            celoss_no_leading_space: torch.Tensor
+            bpb_no_leading_space: torch.Tensor
             if self.metric_type == "pmi_dc":
                 assert dc_lm_logits is not None
                 # get domain conditional continuation logits: [cont_len, vocab]
@@ -115,6 +118,10 @@ class ICLMetric(Metric):
                 )
                 celoss = -log_likelihood
                 bpb = -log_likelihood  # the normalization factors cancel out
+
+                log_likelihood_no_leading_space = log_likelihood
+                celoss_no_leading_space = celoss
+                bpb_no_leading_space = bpb
             elif self.metric_type == "acc" or self.metric_type == "f1":
                 # gather log-probs at continuation token indices
                 log_likelihood = torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
