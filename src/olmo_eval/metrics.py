@@ -33,11 +33,13 @@ class ICLMetric(Metric):
         self.metric_type = metric_type
 
         self.add_state("loglikelihoods", default=[], dist_reduce_fx=dist_combine_lists)
-        self.add_state("celosses", default=[], dist_reduce_fx=dist_combine_lists) 
+        self.add_state("celosses", default=[], dist_reduce_fx=dist_combine_lists)
         self.add_state("bpbs", default=[], dist_reduce_fx=dist_combine_lists)
         self.add_state("labels", default=[], dist_reduce_fx=dist_combine_lists)
 
-        self.add_state("loglikelihoods_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists)
+        self.add_state(
+            "loglikelihoods_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists
+        )
         self.add_state("celosses_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists)
         self.add_state("bpbs_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists)
 
@@ -46,9 +48,13 @@ class ICLMetric(Metric):
         self.celosses: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.bpbs: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.labels: List[Tuple[Optional[int], Optional[int], Optional[int]]] = []
-        
-        self.loglikelihoods_no_leading_space: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
-        self.celosses_no_leading_space: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
+
+        self.loglikelihoods_no_leading_space: List[
+            Tuple[Optional[int], Optional[int], Optional[float]]
+        ] = []
+        self.celosses_no_leading_space: List[
+            Tuple[Optional[int], Optional[int], Optional[float]]
+        ] = []
         self.bpbs_no_leading_space: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
 
     def update(
@@ -167,7 +173,9 @@ class ICLMetric(Metric):
             self.celosses.append((doc_id, cont_id, float(celoss)))
             self.bpbs.append((doc_id, cont_id, float(bpb)))
 
-            self.loglikelihoods_no_leading_space.append((doc_id, cont_id, float(log_likelihood_no_leading_space)))
+            self.loglikelihoods_no_leading_space.append(
+                (doc_id, cont_id, float(log_likelihood_no_leading_space))
+            )
             self.celosses_no_leading_space.append((doc_id, cont_id, float(celoss_no_leading_space)))
             self.bpbs_no_leading_space.append((doc_id, cont_id, float(bpb_no_leading_space)))
 
@@ -290,9 +298,13 @@ class ICLMetric(Metric):
             for cont_id in loglikelihood_dict[doc_id]:
                 try:
                     loglikelihoods[cont_id] = loglikelihood_dict[doc_id][cont_id]
-                    loglikelihoods_no_leading_space[cont_id] = loglikelihood_no_leading_space_dict[doc_id][cont_id]
+                    loglikelihoods_no_leading_space[cont_id] = loglikelihood_no_leading_space_dict[
+                        doc_id
+                    ][cont_id]
                     celosses[cont_id] = celoss_dict[doc_id][cont_id]
-                    celosses_no_leading_space[cont_id] = celoss_no_leading_space_dict[doc_id][cont_id]
+                    celosses_no_leading_space[cont_id] = celoss_no_leading_space_dict[doc_id][
+                        cont_id
+                    ]
                     bpbs[cont_id] = bpb_dict[doc_id][cont_id]
                     bpbs_no_leading_space[cont_id] = bpb_no_leading_space_dict[doc_id][cont_id]
                 except IndexError:
@@ -321,7 +333,9 @@ class ICLMetric(Metric):
                     1.0 if torch.argmax(loglikelihoods).item() == label_dict[doc_id] else 0.0
                 )
                 correct_no_leading_space.append(
-                    1.0 if torch.argmax(loglikelihoods_no_leading_space).item() == label_dict[doc_id] else 0.0
+                    1.0
+                    if torch.argmax(loglikelihoods_no_leading_space).item() == label_dict[doc_id]
+                    else 0.0
                 )
                 celoss.append(celosses[label_dict[doc_id]].item())
                 celoss_no_leading_space.append(celosses_no_leading_space[label_dict[doc_id]].item())
@@ -331,9 +345,13 @@ class ICLMetric(Metric):
                 soft_log_score.append(
                     torch.log_softmax(loglikelihoods, dim=0)[label_dict[doc_id]].item()
                 )
-                soft_score_no_leading_space.append(torch.softmax(loglikelihoods_no_leading_space, dim=0)[label_dict[doc_id]].item())
+                soft_score_no_leading_space.append(
+                    torch.softmax(loglikelihoods_no_leading_space, dim=0)[label_dict[doc_id]].item()
+                )
                 soft_log_score_no_leading_space.append(
-                    torch.log_softmax(loglikelihoods_no_leading_space, dim=0)[label_dict[doc_id]].item()
+                    torch.log_softmax(loglikelihoods_no_leading_space, dim=0)[
+                        label_dict[doc_id]
+                    ].item()
                 )
 
         # v1 vs. v2 corresponds to whether we add a 1 to the num chars or num bytes when normalizing the answer length. See https://github.com/allenai/OLMo-in-loop-evals/pull/6
@@ -350,7 +368,9 @@ class ICLMetric(Metric):
             }
         elif self.metric_type == "ce_loss":
             return {
-                "ce_loss_v1": torch.tensor(sum(celoss_no_leading_space) / len(celoss_no_leading_space)),
+                "ce_loss_v1": torch.tensor(
+                    sum(celoss_no_leading_space) / len(celoss_no_leading_space)
+                ),
                 "ce_loss_v2": torch.tensor(sum(celoss) / len(celoss)),
             }
         elif self.metric_type == "bpb":
@@ -362,12 +382,18 @@ class ICLMetric(Metric):
             return {
                 f"{self.metric_type}_v1": torch.tensor(sum(correct) / len(correct)),
                 f"{self.metric_type}_v2": torch.tensor(sum(correct) / len(correct)),
-                "ce_loss_v1": torch.tensor(sum(celoss_no_leading_space) / len(celoss_no_leading_space)),
+                "ce_loss_v1": torch.tensor(
+                    sum(celoss_no_leading_space) / len(celoss_no_leading_space)
+                ),
                 "ce_loss_v2": torch.tensor(sum(celoss) / len(celoss)),
                 "bpb_v1": torch.tensor(sum(bpb_no_leading_space) / len(bpb_no_leading_space)),
                 "bpb_v2": torch.tensor(sum(bpb) / len(bpb)),
-                "soft_v1": torch.tensor(sum(soft_score_no_leading_space) / len(soft_score_no_leading_space)),
+                "soft_v1": torch.tensor(
+                    sum(soft_score_no_leading_space) / len(soft_score_no_leading_space)
+                ),
                 "soft_v2": torch.tensor(sum(soft_score) / len(soft_score)),
-                "soft_log_v1": torch.tensor(sum(soft_log_score_no_leading_space) / len(soft_log_score_no_leading_space)),
+                "soft_log_v1": torch.tensor(
+                    sum(soft_log_score_no_leading_space) / len(soft_log_score_no_leading_space)
+                ),
                 "soft_log_v2": torch.tensor(sum(soft_log_score) / len(soft_log_score)),
             }
