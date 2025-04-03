@@ -135,6 +135,7 @@ class ICLMetric(Metric):
                     * LOG_2_OF_E
                 )
 
+                log_likelihood_no_leading_space = torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
                 celoss_no_leading_space = (
                     -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1)).sum()
                     / batch["cont_str_len_no_leading_space"][idx]
