@@ -218,6 +218,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         cont_lens = []
         cont_str_lens = []
         cont_byte_lens = []
+        cont_str_len_no_leading_space = []
+        cont_byte_len_no_leading_space = []
         queries = []
         dc_queries = []
         label_ids = []
@@ -241,6 +243,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             cont_lens.append(sample["cont_len"])
             cont_str_lens.append(sample["cont_str_len"])
             cont_byte_lens.append(sample["cont_byte_len"])
+            cont_str_len_no_leading_space.append(sample["cont_str_len_no_leading_space"])
+            cont_byte_len_no_leading_space.append(sample["cont_byte_len_no_leading_space"])
 
             queries.append(
                 torch.LongTensor(
@@ -270,6 +274,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             ),  # since query has last token removed from continuation
             "cont_str_len": torch.LongTensor(cont_str_lens),
             "cont_byte_len": torch.LongTensor(cont_byte_lens),
+            "cont_str_len_no_leading_space": torch.LongTensor(cont_str_len_no_leading_space),
+            "cont_byte_len_no_leading_space": torch.LongTensor(cont_byte_len_no_leading_space),
             "input_ids": torch.stack(queries),
             "dc_input_ids": torch.stack(dc_queries),
             "label_id": torch.LongTensor(label_ids),
