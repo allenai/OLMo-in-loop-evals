@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [v0.7.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.6.1) - 2025-03-10
+## [v0.7.1](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.7.1) - 2025-04-02
+
+- Fix normalization to match the OLMES standard
+
+## [v0.7.0](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.7.0) - 2025-03-10
 
 - Add in-loop GSM, Minerva, MBPP, HumanEval
 
