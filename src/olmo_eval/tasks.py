@@ -1704,6 +1704,10 @@ LABEL_TO_TASK_MAP_ORIG = {
         OEEvalTask,
         {"dataset_path": "arc_easy", "dataset_name": "rc_5shot", "metric_type": "acc"},
     ),
+    "basic_skills_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
     "boolq_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "boolq", "dataset_name": "mc_5shot", "metric_type": "acc"},

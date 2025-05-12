@@ -1,0 +1,25 @@
+{
+  "task_name": "basic_skills",
+  "task_hash": "dddddddddddddddddd92fa9a51d8dddd",
+  "task_config": {
+    "dataset_path": "basic_skills",
+    "primary_metric": "acc_per_token",
+    "split": "validation",
+    "random_subsample_seed": 1234,
+    "num_shots": 5,
+    "metadata": {
+      "regimes": [
+        "OLMES-v0.1"
+      ],
+      "alias": "basic_skills:rc::olmes"
+    },
+    "generation_kwargs": {},
+    "context_kwargs": {},
+    "dataset_name": "arithmetic",
+    "task_name": "basic_skills",
+    "version": 0,
+    "task_core": "basic_skills"
+  },
+  "current_date": "2025-05-12 00:06:28 UTC",
+  "num_instances": 1000
+}
