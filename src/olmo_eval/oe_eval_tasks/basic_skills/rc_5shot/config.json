@@ -5,7 +5,6 @@
     "dataset_path": "basic_skills",
     "primary_metric": "acc_per_token",
     "split": "validation",
-    "random_subsample_seed": 1234,
     "num_shots": 5,
     "metadata": {
       "regimes": [
@@ -20,6 +19,5 @@
     "version": 0,
     "task_core": "basic_skills"
   },
-  "current_date": "2025-05-12 00:06:28 UTC",
-  "num_instances": 1000
+  "current_date": "2025-05-12 00:06:28 UTC"
 }
