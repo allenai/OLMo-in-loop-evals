@@ -1,6 +1,6 @@
 {
   "task_name": "basic_skills_common_knowledge",
-  "task_hash": "67983750bfb70a3b5cc34dcd67ee3c6a",
+  "task_hash": "51e88e759602f9085a8c779da375d833",
   "task_config": {
     "dataset_path": "basic_skills_common_knowledge",
     "primary_metric": "acc_per_token",
