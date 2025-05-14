@@ -1,0 +1,23 @@
+{
+  "task_name": "basic_skills_pattern",
+  "task_hash": "67983750bfb70a3b5cc34dcd67ee3c6a",
+  "task_config": {
+    "dataset_path": "basic_skills_pattern",
+    "primary_metric": "acc_per_token",
+    "split": "validation",
+    "num_shots": 5,
+    "metadata": {
+      "regimes": [
+        "OLMES-v0.1"
+      ],
+      "alias": "basic_skills_pattern:rc::olmes"
+    },
+    "generation_kwargs": {},
+    "context_kwargs": {},
+    "dataset_name": "pattern",
+    "task_name": "basic_skills_pattern",
+    "version": 0,
+    "task_core": "basic_skills_pattern"
+  },
+  "current_date": "2025-05-12 00:06:28 UTC"
+}
