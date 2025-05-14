@@ -1704,9 +1704,29 @@ LABEL_TO_TASK_MAP_ORIG = {
         OEEvalTask,
         {"dataset_path": "arc_easy", "dataset_name": "rc_5shot", "metric_type": "acc"},
     ),
-    "basic_skills_rc_5shot": (
+    "basic_skills_arithmetic_rc_5shot": (
         OEEvalTask,
-        {"dataset_path": "basic_skills", "dataset_name": "rc_5shot", "metric_type": "acc"},
+        {"dataset_path": "basic_skills_arithmetic", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "basic_skills_coding_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills_coding", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "basic_skills_common_knowledge_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills_common_knowledge", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "basic_skills_logical_reasoning_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills_logical_reasoning", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "basic_skills_pattern_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills_pattern", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "basic_skills_string_operations_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "basic_skills_string_operations", "dataset_name": "rc_5shot", "metric_type": "acc"},
     ),
     "boolq_mc_5shot": (
         OEEvalTask,
