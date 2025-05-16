@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.7.2](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.7.2) - 2025-05-16
+
+- Add basic skills evals
+
 ## [v0.7.1](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.7.1) - 2025-04-02
 
 - Fix normalization to match the OLMES standard
