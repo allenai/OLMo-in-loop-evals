@@ -1,0 +1,23 @@
+{
+  "task_name": "basic_skills_string_operations",
+  "task_hash": "8e5fdc7697f1bc7b0c9487a6fa682e45",
+  "task_config": {
+    "dataset_path": "basic_skills_string_operations",
+    "primary_metric": "acc_per_token",
+    "split": "validation",
+    "num_shots": 5,
+    "metadata": {
+      "regimes": [
+        "OLMES-v0.1"
+      ],
+      "alias": "basic_skills_string_operations:rc::olmes"
+    },
+    "generation_kwargs": {},
+    "context_kwargs": {},
+    "dataset_name": "string_operations",
+    "task_name": "basic_skills_string_operations",
+    "version": 0,
+    "task_core": "basic_skills_string_operations"
+  },
+  "current_date": "2025-05-12 00:06:28 UTC"
+}

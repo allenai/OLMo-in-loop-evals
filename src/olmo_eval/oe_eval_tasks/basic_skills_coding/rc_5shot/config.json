@@ -1,0 +1,23 @@
+{
+  "task_name": "basic_skills_coding",
+  "task_hash": "d748d1d8ba506d3d234eed529ef62c3e",
+  "task_config": {
+    "dataset_path": "basic_skills_coding",
+    "primary_metric": "acc_per_token",
+    "split": "validation",
+    "num_shots": 5,
+    "metadata": {
+      "regimes": [
+        "OLMES-v0.1"
+      ],
+      "alias": "basic_skills_coding:rc::olmes"
+    },
+    "generation_kwargs": {},
+    "context_kwargs": {},
+    "dataset_name": "coding",
+    "task_name": "basic_skills_coding",
+    "version": 0,
+    "task_core": "basic_skills_coding"
+  },
+  "current_date": "2025-05-12 00:06:28 UTC"
+}

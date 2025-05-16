@@ -1,0 +1,23 @@
+{
+  "task_name": "basic_skills_logical_reasoning",
+  "task_hash": "a3d406a2f4224604b7e6bbf68050691d",
+  "task_config": {
+    "dataset_path": "basic_skills_logical_reasoning",
+    "primary_metric": "acc_per_token",
+    "split": "validation",
+    "num_shots": 5,
+    "metadata": {
+      "regimes": [
+        "OLMES-v0.1"
+      ],
+      "alias": "basic_skills_logical_reasoning:rc::olmes"
+    },
+    "generation_kwargs": {},
+    "context_kwargs": {},
+    "dataset_name": "logical_reasoning",
+    "task_name": "basic_skills_logical_reasoning",
+    "version": 0,
+    "task_core": "basic_skills_logical_reasoning"
+  },
+  "current_date": "2025-05-12 00:06:28 UTC"
+}
