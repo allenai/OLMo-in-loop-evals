@@ -1880,6 +1880,10 @@ LABEL_TO_TASK_MAP_ORIG = {
         OEEvalTask,
         {"dataset_path": "hellaswag", "dataset_name": "rc_5shot", "metric_type": "len_norm"},
     ),
+    "hellaswag_bpb_5shot": (
+        OEEvalTask,
+        {"dataset_path": "hellaswag", "dataset_name": "rc_5shot", "metric_type": "bpb"},
+    ),
     "openbookqa_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "openbookqa", "dataset_name": "mc_5shot", "metric_type": "acc"},
@@ -2344,7 +2348,7 @@ LABEL_TO_TASK_MAP_LADDER = {
     "mmlu_stem_val_rc_5shot": (MMLU, {"dataset_name": "stem", "prompt_variations": 2}),
     "mmlu_stem_val_bpb_5shot": (
         MMLU,
-        {"dataset_name": "stem", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "stem", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_stem_val_mc_5shot": (
         MMLU,
@@ -2360,7 +2364,7 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_stem_test_bpb_var": (
         MMLU,
-        {"dataset_name": "stem", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "stem", "split": "test", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_stem_test_rc_5shot": (
         MMLU,
@@ -2368,7 +2372,7 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_stem_test_bpb_5shot": (
         MMLU,
-        {"dataset_name": "stem", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "stem", "split": "test", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_stem_test_mc_5shot": (
         MMLU,
@@ -2388,11 +2392,11 @@ LABEL_TO_TASK_MAP_LADDER = {
     "mmlu_humanities_val_rc_5shot": (MMLU, {"dataset_name": "humanities", "prompt_variations": 2}),
     "mmlu_humanities_val_bpb_var": (
         MMLU,
-        {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "humanities", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_humanities_val_bpb_5shot": (
         MMLU,
-        {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "humanities", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_humanities_val_mc_5shot": (
         MMLU,
@@ -2415,7 +2419,7 @@ LABEL_TO_TASK_MAP_LADDER = {
         {
             "dataset_name": "humanities",
             "split": "test",
-            "prompt_variations": 1,
+            "prompt_variations": 2,
             "metric_type": "bpb",
         },
     ),
@@ -2424,7 +2428,7 @@ LABEL_TO_TASK_MAP_LADDER = {
         {
             "dataset_name": "humanities",
             "split": "test",
-            "prompt_variations": 1,
+            "prompt_variations": 2,
             "metric_type": "bpb",
         },
     ),
@@ -2452,11 +2456,11 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_social_sciences_val_bpb_var": (
         MMLU,
-        {"dataset_name": "social_sciences", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "social_sciences", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_social_sciences_val_bpb_5shot": (
         MMLU,
-        {"dataset_name": "social_sciences", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "social_sciences", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_social_sciences_val_mc_5shot": (
         MMLU,
@@ -2484,7 +2488,7 @@ LABEL_TO_TASK_MAP_LADDER = {
         {
             "dataset_name": "social_sciences",
             "split": "test",
-            "prompt_variations": 1,
+            "prompt_variations": 2,
             "metric_type": "bpb",
         },
     ),
@@ -2493,7 +2497,7 @@ LABEL_TO_TASK_MAP_LADDER = {
         {
             "dataset_name": "social_sciences",
             "split": "test",
-            "prompt_variations": 1,
+            "prompt_variations": 2,
             "metric_type": "bpb",
         },
     ),
@@ -2520,11 +2524,11 @@ LABEL_TO_TASK_MAP_LADDER = {
     "mmlu_other_val_rc_5shot": (MMLU, {"dataset_name": "other", "prompt_variations": 2}),
     "mmlu_other_val_bpb_var": (
         MMLU,
-        {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "other", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_other_val_bpb_5shot": (
         MMLU,
-        {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "other", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_other_val_mc_5shot": (
         MMLU,
@@ -2544,11 +2548,11 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_other_test_bpb_var": (
         MMLU,
-        {"dataset_name": "other", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "other", "split": "test", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_other_test_bpb_5shot": (
         MMLU,
-        {"dataset_name": "other", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {"dataset_name": "other", "split": "test", "prompt_variations": 2, "metric_type": "bpb"},
     ),
     "mmlu_other_test_mc_5shot": (
         MMLU,
