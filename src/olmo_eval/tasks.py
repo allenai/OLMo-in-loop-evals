@@ -80,7 +80,6 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         doc_id = 0
         new_samples = []
         for doc in self.dataset:
-
             for prompt in self.prompts:
                 self.current_prompt = prompt
                 # from EAI harness
@@ -175,9 +174,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
                 # Assert all continuations are length 1
                 for choice in choices:
-                    assert (
-                        len(choice) == 1
-                    ), f"Expected continuation length 1, got {len(choice)}"
+                    assert len(choice) == 1, f"Expected continuation length 1, got {len(choice)}"
 
                 # Take first token of each continuation
                 choices = [choice[0] for choice in choices]
