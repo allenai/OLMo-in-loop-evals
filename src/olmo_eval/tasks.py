@@ -78,7 +78,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     def prep_examples(self):
         """Append doc_ids to each example so that they are processed together in the metric"""
         doc_id = 0
+        new_samples = []
         for doc in self.dataset:
+
             for prompt in self.prompts:
                 self.current_prompt = prompt
                 # from EAI harness
@@ -127,7 +129,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                     dc_query = dc + continuation[:-1]
 
                     # form a sample
-                    self.samples.append(
+                    new_samples.append(
                         {
                             "doc_id": doc_id,
                             "cont_id": cont_id,
@@ -149,6 +151,46 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                     )
 
                 doc_id += 1
+
+        # Fast MCQA:
+        # Only pass a single request, and group together all continuations as tokens
+        if self.fast_mc:
+            # Get unique doc IDs
+            unique_doc_ids = set(sample["doc_id"] for sample in new_samples)
+
+            # Create new samples list for fast MC
+            fast_mc_samples = []
+
+            # Process each unique document
+            for doc_id in unique_doc_ids:
+                # Get all samples for this doc_id
+                doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
+
+                # Sort by continuation ID
+                doc_samples.sort(key=lambda x: x["cont_id"])
+
+                # Create new sample with distractor continuations
+                base_sample = doc_samples[0].copy()
+                choices = [s["continuation"] for s in doc_samples]
+
+                # Assert all continuations are length 1
+                for choice in choices:
+                    assert (
+                        len(choice) == 1
+                    ), f"Expected continuation length 1, got {len(choice)}"
+
+                # Take first token of each continuation
+                choices = [choice[0] for choice in choices]
+
+                base_sample["choices"] = choices
+                base_sample["fast_mc"] = True
+
+                fast_mc_samples.append(base_sample)
+
+            # Add fast MC samples to main samples list
+            new_samples = fast_mc_samples
+
+        self.samples = new_samples
 
     def pad_tokens_until_max(self, tokens, max_len=2048):
         """truncate from left if len(tokens) > model_ctx_len, max_len is not considered then
