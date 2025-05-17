@@ -1789,11 +1789,21 @@ LABEL_TO_TASK_MAP_ORIG = {
     ),
     "copycolors_10way_fast": (
         OEEvalTask,
-        {"dataset_path": "copycolors", "dataset_name": "10way", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "copycolors",
+            "dataset_name": "10way",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "copycolors_xl_10way_fast": (
         OEEvalTask,
-        {"dataset_path": "copycolors", "dataset_name": "xl_10way", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "copycolors",
+            "dataset_name": "xl_10way",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "csqa_mc_5shot": (
         OEEvalTask,
@@ -2083,7 +2093,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "arc_easy_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "arc_easy", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "arc_easy",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "arc_easy_test_rc_5shot": (
         OEEvalTask,
@@ -2099,7 +2114,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "arc_easy_test_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "arc_easy", "dataset_name": "test_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "arc_easy",
+            "dataset_name": "test_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "boolq_val_rc_5shot": (
         OEEvalTask,
@@ -2115,7 +2135,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "boolq_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "boolq", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "boolq",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "csqa_val_rc_5shot": (
         OEEvalTask,
@@ -2131,7 +2156,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "csqa_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "csqa", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "csqa",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "hellaswag_val_rc_5shot": (
         OEEvalTask,
@@ -2147,7 +2177,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "hellaswag_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "hellaswag", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "hellaswag",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "openbookqa_val_rc_5shot": (
         OEEvalTask,
@@ -2163,7 +2198,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "openbookqa_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "openbookqa", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "openbookqa",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "openbookqa_test_rc_5shot": (
         OEEvalTask,
@@ -2179,7 +2219,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "openbookqa_test_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "openbookqa", "dataset_name": "test_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "openbookqa",
+            "dataset_name": "test_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "piqa_val_rc_5shot": (
         OEEvalTask,
@@ -2195,7 +2240,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "piqa_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "piqa", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "piqa",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "socialiqa_val_rc_5shot": (
         OEEvalTask,
@@ -2211,7 +2261,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "socialiqa_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "socialiqa", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "socialiqa",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "winogrande_val_rc_5shot": (
         OEEvalTask,
@@ -2227,11 +2282,19 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "winogrande_val_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "winogrande", "dataset_name": "val_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "winogrande",
+            "dataset_name": "val_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "mmlu_stem_val_rc_var": (MMLU, {"dataset_name": "stem", "prompt_variations": 1}),
     "mmlu_stem_val_rc_5shot": (MMLU, {"dataset_name": "stem", "prompt_variations": 2}),
-    "mmlu_stem_val_rc_5shot": (MMLU, {"dataset_name": "stem", "prompt_variations": 2, "metric_type": "bpb"}),
+    "mmlu_stem_val_bpb_5shot": (
+        MMLU,
+        {"dataset_name": "stem", "prompt_variations": 1, "metric_type": "bpb"},
+    ),
     "mmlu_stem_val_mc_5shot": (
         MMLU,
         {"dataset_name": "stem", "prompt_variations": 2, "mc_labels": True},
@@ -2262,12 +2325,24 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_stem_test_mc_5shot_fast": (
         MMLU,
-        {"dataset_name": "stem", "split": "test", "prompt_variations": 2, "mc_labels": True, "fast_mc": True},
+        {
+            "dataset_name": "stem",
+            "split": "test",
+            "prompt_variations": 2,
+            "mc_labels": True,
+            "fast_mc": True,
+        },
     ),
     "mmlu_humanities_val_rc_var": (MMLU, {"dataset_name": "humanities", "prompt_variations": 1}),
     "mmlu_humanities_val_rc_5shot": (MMLU, {"dataset_name": "humanities", "prompt_variations": 2}),
-    "mmlu_humanities_val_bpb_var": (MMLU, {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"}),
-    "mmlu_humanities_val_bpb_5shot": (MMLU, {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"}),
+    "mmlu_humanities_val_bpb_var": (
+        MMLU,
+        {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"},
+    ),
+    "mmlu_humanities_val_bpb_5shot": (
+        MMLU,
+        {"dataset_name": "humanities", "prompt_variations": 1, "metric_type": "bpb"},
+    ),
     "mmlu_humanities_val_mc_5shot": (
         MMLU,
         {"dataset_name": "humanities", "prompt_variations": 2, "mc_labels": True},
@@ -2286,11 +2361,21 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_humanities_test_bpb_var": (
         MMLU,
-        {"dataset_name": "humanities", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {
+            "dataset_name": "humanities",
+            "split": "test",
+            "prompt_variations": 1,
+            "metric_type": "bpb",
+        },
     ),
     "mmlu_humanities_test_bpb_5shot": (
         MMLU,
-        {"dataset_name": "humanities", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {
+            "dataset_name": "humanities",
+            "split": "test",
+            "prompt_variations": 1,
+            "metric_type": "bpb",
+        },
     ),
     "mmlu_humanities_test_mc_5shot": (
         MMLU,
@@ -2298,7 +2383,13 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_humanities_test_mc_5shot_fast": (
         MMLU,
-        {"dataset_name": "humanities", "split": "test", "prompt_variations": 2, "mc_labels": True, "fast_mc": True},
+        {
+            "dataset_name": "humanities",
+            "split": "test",
+            "prompt_variations": 2,
+            "mc_labels": True,
+            "fast_mc": True,
+        },
     ),
     "mmlu_social_sciences_val_rc_var": (
         MMLU,
@@ -2322,7 +2413,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_social_sciences_val_mc_5shot_fast": (
         MMLU,
-        {"dataset_name": "social_sciences", "prompt_variations": 2, "mc_labels": True, "fast_mc": True},
+        {
+            "dataset_name": "social_sciences",
+            "prompt_variations": 2,
+            "mc_labels": True,
+            "fast_mc": True,
+        },
     ),
     "mmlu_social_sciences_test_rc_var": (
         MMLU,
@@ -2334,11 +2430,21 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "mmlu_social_sciences_test_bpb_var": (
         MMLU,
-        {"dataset_name": "social_sciences", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {
+            "dataset_name": "social_sciences",
+            "split": "test",
+            "prompt_variations": 1,
+            "metric_type": "bpb",
+        },
     ),
     "mmlu_social_sciences_test_bpb_5shot": (
         MMLU,
-        {"dataset_name": "social_sciences", "split": "test", "prompt_variations": 1, "metric_type": "bpb"},
+        {
+            "dataset_name": "social_sciences",
+            "split": "test",
+            "prompt_variations": 1,
+            "metric_type": "bpb",
+        },
     ),
     "mmlu_social_sciences_test_mc_5shot": (
         MMLU,
@@ -2356,13 +2462,19 @@ LABEL_TO_TASK_MAP_LADDER = {
             "split": "test",
             "prompt_variations": 2,
             "mc_labels": True,
-            "fast_mc": True
+            "fast_mc": True,
         },
     ),
     "mmlu_other_val_rc_var": (MMLU, {"dataset_name": "other", "prompt_variations": 1}),
     "mmlu_other_val_rc_5shot": (MMLU, {"dataset_name": "other", "prompt_variations": 2}),
-    "mmlu_other_val_bpb_var": (MMLU, {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"}),
-    "mmlu_other_val_bpb_5shot": (MMLU, {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"}),
+    "mmlu_other_val_bpb_var": (
+        MMLU,
+        {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"},
+    ),
+    "mmlu_other_val_bpb_5shot": (
+        MMLU,
+        {"dataset_name": "other", "prompt_variations": 1, "metric_type": "bpb"},
+    ),
     "mmlu_other_val_mc_5shot": (
         MMLU,
         {"dataset_name": "other", "prompt_variations": 2, "mc_labels": True},
@@ -2391,10 +2503,15 @@ LABEL_TO_TASK_MAP_LADDER = {
         MMLU,
         {"dataset_name": "other", "split": "test", "prompt_variations": 2, "mc_labels": True},
     ),
-
     "mmlu_other_test_mc_5shot_fast": (
         MMLU,
-        {"dataset_name": "other", "split": "test", "prompt_variations": 2, "mc_labels": True, "fast_mc": True},
+        {
+            "dataset_name": "other",
+            "split": "test",
+            "prompt_variations": 2,
+            "mc_labels": True,
+            "fast_mc": True,
+        },
     ),
 }
 
