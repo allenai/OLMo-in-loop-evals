@@ -155,7 +155,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         # Only pass a single request, and group together all continuations as tokens
         if self.fast_mc:
             # Get unique doc IDs
-            unique_doc_ids = set(sample["doc_id"] for sample in new_samples)
+            unique_doc_ids = {
+                sample["doc_id"] for sample in new_samples if isinstance(sample["doc_id"], int)
+            }
 
             # Create new samples list for fast MC
             fast_mc_samples = []
@@ -166,7 +168,11 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
 
                 # Sort by continuation ID
-                doc_samples.sort(key=lambda x: x["cont_id"])
+                doc_samples.sort(
+                    key=lambda x: float(x["cont_id"])
+                    if isinstance(x["cont_id"], (int, float))
+                    else 0.0
+                )
 
                 # Create new sample with distractor continuations
                 base_sample = doc_samples[0].copy()
@@ -174,10 +180,16 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
                 # Assert all continuations are length 1
                 for choice in choices:
+                    if not isinstance(choice, (list, tuple)):
+                        raise TypeError(
+                            f"Expected continuation to be a list or tuple, got {type(choice)}"
+                        )
                     assert len(choice) == 1, f"Expected continuation length 1, got {len(choice)}"
 
                 # Take first token of each continuation
-                choices = [choice[0] for choice in choices]
+                choices = [
+                    choice[0] if isinstance(choice, (list, tuple)) else choice for choice in choices
+                ]
 
                 base_sample["choices"] = choices
                 base_sample["fast_mc"] = True
