@@ -288,7 +288,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
         if self.fast_mc:
             # Pad choice_ids with -1 (for Qs with different numbers of choices)
-            max_choices_len = max(len(choices) for choices in choice_ids)        
+            max_choices_len = max(len(choices) for choices in choice_ids)
             padded_choice_ids = []
             for choices in choice_ids:
                 padding = [-1] * (max_choices_len - len(choices))
@@ -1517,7 +1517,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         for requests in self.dataset:
             current_doc_id_offset += max_doc_id
             max_doc_id = 0  # Max doc id seen in this dataset
-            
+
             new_samples = []
             for request in requests:
                 doc = request["doc"]
@@ -1610,7 +1610,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         "label_id": label_id,
                     }
                 )
-            
+
             # Fast MCQA:
             # Only pass a single request, and group together all continuations as tokens
             if self.fast_mc:
@@ -1624,31 +1624,32 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 for doc_id in unique_doc_ids:
                     # Get all samples for this doc_id
                     doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
-                    
+
                     # Sort by continuation ID
                     doc_samples.sort(key=lambda x: x["cont_id"])
-                    
+
                     # Create new sample with distractor continuations
                     base_sample = doc_samples[0].copy()
                     choices = [s["continuation"] for s in doc_samples]
-                    
+
                     # Assert all continuations are length 1
                     for choice in choices:
-                        assert len(choice) == 1, f"Expected continuation length 1, got {len(choice)}"
-                    
+                        assert (
+                            len(choice) == 1
+                        ), f"Expected continuation length 1, got {len(choice)}"
+
                     # Take first token of each continuation
                     choices = [choice[0] for choice in choices]
-                    
+
                     base_sample["choices"] = choices
                     base_sample["fast_mc"] = True
-                    
+
                     fast_mc_samples.append(base_sample)
 
                 # Add fast MC samples to main samples list
                 new_samples = fast_mc_samples
 
             self.samples = new_samples
-
 
     def doc_to_text(self, doc) -> str:
         del doc
@@ -2037,7 +2038,12 @@ LABEL_TO_TASK_MAP_LADDER = {
     ),
     "arc_challenge_test_mc_5shot_fast": (
         OEEvalTask,
-        {"dataset_path": "arc_challenge", "dataset_name": "test_mc_5shot", "metric_type": "acc", "fast_mc": True},
+        {
+            "dataset_path": "arc_challenge",
+            "dataset_name": "test_mc_5shot",
+            "metric_type": "acc",
+            "fast_mc": True,
+        },
     ),
     "arc_easy_val_rc_5shot": (
         OEEvalTask,

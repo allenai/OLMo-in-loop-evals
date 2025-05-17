@@ -145,7 +145,9 @@ class ICLMetric(Metric):
                     bpb_no_leading_space = bpb
                 elif self.metric_type == "acc" or self.metric_type == "f1":
                     # gather log-probs at continuation token indices
-                    log_likelihood = torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
+                    log_likelihood = torch.gather(
+                        lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)
+                    ).sum()
                     celoss = (
                         -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
                         / batch["cont_str_len"][idx]
@@ -207,7 +209,9 @@ class ICLMetric(Metric):
                 self.loglikelihoods_no_leading_space.append(
                     (doc_id, _cont_id, float(log_likelihood_no_leading_space))
                 )
-                self.celosses_no_leading_space.append((doc_id, _cont_id, float(celoss_no_leading_space)))
+                self.celosses_no_leading_space.append(
+                    (doc_id, _cont_id, float(celoss_no_leading_space))
+                )
                 self.bpbs_no_leading_space.append((doc_id, _cont_id, float(bpb_no_leading_space)))
 
     def compute(self) -> Dict[str, torch.Tensor]:
