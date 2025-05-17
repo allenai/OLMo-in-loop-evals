@@ -33,6 +33,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         dataset_name: Union[str, Sequence[str], None] = None,
         model_ctx_len: int = 2048,
         fixed_ctx_len: bool = False,
+        fast_mc: bool = False,
         split="validation",
         metric_type=None,  # Override default metric type
         prompts: Optional[List[Optional[str]]] = None,  # List of prompt variants to use
@@ -44,6 +45,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         self.dataset_name = dataset_name
         self.model_ctx_len = model_ctx_len
         self.fixed_ctx_len = fixed_ctx_len
+        self.fast_mc = fast_mc
         self.prompts = prompts or [None]
         self.current_prompt: Optional[str] = None
         if metric_type is not None:
@@ -214,6 +216,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         ctxs = []
         continuations = []
         ctx_lens = []
+        choice_ids = []
         dc_lens = []
         cont_lens = []
         cont_str_lens = []
@@ -245,6 +248,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             cont_byte_lens.append(sample["cont_byte_len"])
             cont_str_len_no_leading_space.append(sample["cont_str_len_no_leading_space"])
             cont_byte_len_no_leading_space.append(sample["cont_byte_len_no_leading_space"])
+            if self.fast_mc:
+                choice_ids.append(sample["choices"])
 
             queries.append(
                 torch.LongTensor(
@@ -280,6 +285,16 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             "dc_input_ids": torch.stack(dc_queries),
             "label_id": torch.LongTensor(label_ids),
         }
+
+        if self.fast_mc:
+            # Pad choice_ids with -1 (for Qs with different numbers of choices)
+            max_choices_len = max(len(choices) for choices in choice_ids)        
+            padded_choice_ids = []
+            for choices in choice_ids:
+                padding = [-1] * (max_choices_len - len(choices))
+                padded_choice_ids.append(choices + padding)
+            choice_ids = padded_choice_ids
+            batch["choice_ids"] = torch.LongTensor(choice_ids)
 
         return batch
 
@@ -1446,6 +1461,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         dataset_name: Union[str, Sequence[str], None] = None,
         model_ctx_len: int = 2048,
         fixed_ctx_len: bool = False,
+        fast_mc: bool = False,
         split=None,
         metric_type=None,
         prompts: Optional[List[Optional[str]]] = None,  # List of prompt variants to use
@@ -1457,6 +1473,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         self.dataset_name = dataset_name
         self.model_ctx_len = model_ctx_len
         self.fixed_ctx_len = fixed_ctx_len
+        self.fast_mc = fast_mc
         self.log_instances = 0  # Set to > 0 to log the first few instances as a sanity check
 
         self.samples: List[Dict[str, Any]] = []
@@ -1500,6 +1517,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         for requests in self.dataset:
             current_doc_id_offset += max_doc_id
             max_doc_id = 0  # Max doc id seen in this dataset
+            
+            new_samples = []
             for request in requests:
                 doc = request["doc"]
                 doc_id = request["doc_id"]
@@ -1571,7 +1590,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 dc_query = dc + continuation[:-1]
 
                 # form a sample
-                self.samples.append(
+                new_samples.append(
                     {
                         "doc_id": doc_id + current_doc_id_offset,
                         "cont_id": cont_id,
@@ -1591,6 +1610,45 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         "label_id": label_id,
                     }
                 )
+            
+            # Fast MCQA:
+            # Only pass a single request, and group together all continuations as tokens
+            if self.fast_mc:
+                # Get unique doc IDs
+                unique_doc_ids = set(sample["doc_id"] for sample in new_samples)
+
+                # Create new samples list for fast MC
+                fast_mc_samples = []
+
+                # Process each unique document
+                for doc_id in unique_doc_ids:
+                    # Get all samples for this doc_id
+                    doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
+                    
+                    # Sort by continuation ID
+                    doc_samples.sort(key=lambda x: x["cont_id"])
+                    
+                    # Create new sample with distractor continuations
+                    base_sample = doc_samples[0].copy()
+                    choices = [s["continuation"] for s in doc_samples]
+                    
+                    # Assert all continuations are length 1
+                    for choice in choices:
+                        assert len(choice) == 1, f"Expected continuation length 1, got {len(choice)}"
+                    
+                    # Take first token of each continuation
+                    choices = [choice[0] for choice in choices]
+                    
+                    base_sample["choices"] = choices
+                    base_sample["fast_mc"] = True
+                    
+                    fast_mc_samples.append(base_sample)
+
+                # Add fast MC samples to main samples list
+                new_samples = fast_mc_samples
+
+            self.samples = new_samples
+
 
     def doc_to_text(self, doc) -> str:
         del doc
@@ -1976,6 +2034,10 @@ LABEL_TO_TASK_MAP_LADDER = {
     "arc_challenge_test_mc_5shot": (
         OEEvalTask,
         {"dataset_path": "arc_challenge", "dataset_name": "test_mc_5shot", "metric_type": "acc"},
+    ),
+    "arc_challenge_test_mc_5shot_fast": (
+        OEEvalTask,
+        {"dataset_path": "arc_challenge", "dataset_name": "test_mc_5shot", "metric_type": "acc", "fast_mc": True},
     ),
     "arc_easy_val_rc_5shot": (
         OEEvalTask,
