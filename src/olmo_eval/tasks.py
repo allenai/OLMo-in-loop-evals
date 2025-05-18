@@ -2680,6 +2680,26 @@ LABEL_TO_TASK_MAP_EXPANDED = {
             "metric_type": "bpb",
         },
     ),
+
+    "minerva_math_500_gold_bpb_0shot": (OEEvalTask, {"dataset_path": "minerva_math_500", "dataset_name": "gold_bpb_0shot", "metric_type": "bpb"}),
+
+    "mt_mbpp_haskell_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_haskell", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_go_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_go", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_python_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_python", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_cpp_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_cpp", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_javascript_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_javascript", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_swift_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_swift", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_scala_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_scala", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_bash_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_bash", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_typescript_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_typescript", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_c_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_c", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_php_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_php", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_rust_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_rust", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_csharp_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_csharp", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_r_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_r", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_ruby_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_ruby", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_java_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_java", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
+    "mt_mbpp_matlab_gold_bpb_3shot": (OEEvalTask, {"dataset_path": "mt_mbpp_matlab", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"}),
 }
 
 
