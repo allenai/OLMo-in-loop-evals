@@ -410,8 +410,8 @@ class ICLMetric(Metric):
             }
         elif self.metric_type == "bpb":
             return {
-                "bpb_v1": torch.tensor(sum(bpb_no_leading_space) / len(bpb_no_leading_space)),
-                "bpb_v2": torch.tensor(sum(bpb) / len(bpb)),
+                "bpb_v1": (sum(bpb_no_leading_space) / len(bpb_no_leading_space)).clone().detach(),
+                "bpb_v2": (sum(bpb) / len(bpb)).clone().detach(),
             }
         else:
             return {
