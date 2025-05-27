@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.8.3](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.3) - 2025-05-27
+
+- Fix speed problem for BPB/RC tasks
+
 ## [v0.8.2](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.2) - 2025-05-17
 
 - Add few-shot HumanEval
