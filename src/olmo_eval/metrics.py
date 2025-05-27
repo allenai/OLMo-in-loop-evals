@@ -103,7 +103,7 @@ class ICLMetric(Metric):
                 choice_ids = batch["choice_ids"][idx]
             else:
                 fast_mc = False
-                choice_ids = cont_tokens
+                choice_ids = [cont_tokens]
 
             # For each choice token, calculate metrics and append as separate entries
             for choice_idx, choice_token in enumerate(choice_ids):
