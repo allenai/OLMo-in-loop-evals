@@ -358,8 +358,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         return batch
 
     def token_encode(self, string: str) -> List[int]:
-        encoding = self.tokenizer.encode(string, add_special_tokens=False)
-        return encoding
+        return self.tokenizer.encode(string, add_special_tokens=False)
 
     def token_decode(self, tokens: List[int]) -> str:
         return self.tokenizer.decode(tokens)
@@ -568,7 +567,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
-                    
+
                 dc = self.token_encode(dc)
 
                 # query, remove last token from continuation, truncate from left is longer than model ctx length
