@@ -94,6 +94,14 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 label_id = self.doc_to_label(doc)
                 doc_text = self.doc_to_text(doc)
                 ctx = self.token_encode(doc_text)
+
+                # Add BOS token if it is exists in the tokenizer
+                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                    ctx = [self.tokenizer.bos_token_id] + ctx
+
+                if doc_id == 0:
+                    log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
+
                 dc = self.token_encode(self.doc_to_domain_conditional(doc))
                 if self.log_instances > 0:
                     self.log_instances -= 1
@@ -350,7 +358,8 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         return batch
 
     def token_encode(self, string: str) -> List[int]:
-        return self.tokenizer.encode(string, add_special_tokens=False)
+        encoding = self.tokenizer.encode(string, add_special_tokens=False)
+        return encoding
 
     def token_decode(self, tokens: List[int]) -> str:
         return self.tokenizer.decode(tokens)
@@ -552,6 +561,14 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
 
             for cont_id, (ctx, dc) in enumerate(zip(ctxs, dcs)):
                 ctx = self.token_encode(ctx)
+
+                # Add BOS token if it is exists in the tokenizer
+                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                    ctx = [self.tokenizer.bos_token_id] + ctx
+
+                if doc_id == 0:
+                    log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
+                    
                 dc = self.token_encode(dc)
 
                 # query, remove last token from continuation, truncate from left is longer than model ctx length
@@ -1608,6 +1625,14 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         label_id = 0
                 doc_text = request_dict["context"]
                 ctx = self.token_encode(doc_text)
+
+                # Add BOS token if it is exists in the tokenizer
+                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                    ctx = [self.tokenizer.bos_token_id] + ctx
+
+                if doc_id == 0:
+                    log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
+
                 dc = self.token_encode(self.doc_to_domain_conditional(doc))
                 if self.log_instances > 0:
                     self.log_instances -= 1
