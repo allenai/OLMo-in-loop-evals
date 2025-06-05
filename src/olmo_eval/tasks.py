@@ -96,7 +96,10 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 ctx = self.token_encode(doc_text)
 
                 # Add BOS token if it is exists in the tokenizer
-                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                if (
+                    self.tokenizer.bos_token_id is not None
+                    and ctx[0] != self.tokenizer.bos_token_id
+                ):
                     ctx = [self.tokenizer.bos_token_id] + ctx
 
                 if doc_id == 0:
@@ -562,7 +565,10 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
                 ctx = self.token_encode(ctx)
 
                 # Add BOS token if it is exists in the tokenizer
-                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                if (
+                    self.tokenizer.bos_token_id is not None
+                    and ctx[0] != self.tokenizer.bos_token_id
+                ):
                     ctx = [self.tokenizer.bos_token_id] + ctx
 
                 if doc_id == 0:
@@ -1626,7 +1632,10 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 ctx = self.token_encode(doc_text)
 
                 # Add BOS token if it is exists in the tokenizer
-                if self.tokenizer.bos_token_id is not None and ctx[0] != self.tokenizer.bos_token_id:
+                if (
+                    self.tokenizer.bos_token_id is not None
+                    and ctx[0] != self.tokenizer.bos_token_id
+                ):
                     ctx = [self.tokenizer.bos_token_id] + ctx
 
                 if doc_id == 0:
