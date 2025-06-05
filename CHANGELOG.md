@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v0.8.4](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.4) - 2025-06-05
+
+- Add BOS token, when the BOS token exists in the tokenizer
+
 ## [v0.8.3](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.3) - 2025-05-27
 
 - Fix speed problem for BPB/RC tasks
