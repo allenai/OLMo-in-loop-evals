@@ -105,6 +105,20 @@ class ICLMetric(Metric):
                 fast_mc = False
                 choice_ids = [cont_tokens]
 
+            ctx_tokens = batch["ctx"][idx][
+                0 : batch["ctx_len"][idx]
+            ]
+
+            corr_logits = -torch.gather(lm_cont_logits, 1, cont_tokens.unsqueeze(-1))
+
+            print(
+                f"Input:\n{batch['ctx'][idx]}\n{batch['continuation'][idx]}\n\n"
+                f"Tokens:\n{ctx_tokens}\n{cont_tokens}\n\n"
+                f"Logits:\n{corr_logits}\n\n\n" + "="*50
+            )
+
+            raise RuntimeError()
+
             # For each choice token, calculate metrics and append as separate entries
             for choice_idx, choice_token in enumerate(choice_ids):
                 if fast_mc:

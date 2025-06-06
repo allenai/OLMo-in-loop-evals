@@ -1642,6 +1642,14 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
 
                 dc = self.token_encode(self.doc_to_domain_conditional(doc))
+
+                # Add BOS token if it is exists in the tokenizer
+                if (
+                    self.tokenizer.bos_token_id is not None
+                    and dc[0] != self.tokenizer.bos_token_id
+                ):
+                    dc = [self.tokenizer.bos_token_id] + dc
+
                 if self.log_instances > 0:
                     self.log_instances -= 1
                     ds_name = self.dataset_name
