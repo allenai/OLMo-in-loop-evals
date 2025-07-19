@@ -395,7 +395,9 @@ class ICLMetric(Metric):
             assert labels is not None
             # for NLI tasks, continuations are yes, no, neither, so idx=0 assigned to pos label
             score = self.custom_f1_score(labels, preds, pos_label=0)
-            score_no_leading_space = self.custom_f1_score(labels, preds_no_leading_space, pos_label=0)
+            score_no_leading_space = self.custom_f1_score(
+                labels, preds_no_leading_space, pos_label=0
+            )
             return {
                 "f1_v1": torch.tensor(score),
                 "f1_v2": torch.tensor(score_no_leading_space),
