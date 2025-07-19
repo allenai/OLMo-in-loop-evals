@@ -434,7 +434,7 @@ class ICLMetric(Metric):
                 "soft_log_v2": torch.tensor(sum(soft_log_score) / len(soft_log_score)),
             }
 
-    def custom_f1_score(y_true, y_pred, pos_label=1):
+    def custom_f1_score(self, y_true, y_pred, pos_label=1):
         y_true = list(y_true)
         y_pred = list(y_pred)
         tp = sum((yt == pos_label) and (yp == pos_label) for yt, yp in zip(y_true, y_pred))
