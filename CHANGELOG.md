@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Removed
+
+- Remove `sklearn` and `numpy` as depedencies. Manual implementation of F1 score.
+
 ## [v0.8.4](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.4) - 2025-06-05
 
 - Add BOS token, when the BOS token exists in the tokenizer

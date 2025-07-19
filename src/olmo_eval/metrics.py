@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import torch
 import torch.nn.functional as F
-from sklearn.metrics import f1_score
 from torchmetrics import Metric
 
 from .util import all_gather_object
@@ -395,8 +394,10 @@ class ICLMetric(Metric):
             assert preds is not None
             assert labels is not None
             # for NLI tasks, continuations are yes, no, neither, so idx=0 assigned to pos label
-            score = f1_score(labels, preds, pos_label=0)
-            score_no_leading_space = f1_score(labels, preds_no_leading_space, pos_label=0)
+            score = self.custom_f1_score(labels, preds, pos_label=0)
+            score_no_leading_space = self.custom_f1_score(
+                labels, preds_no_leading_space, pos_label=0
+            )
             return {
                 "f1_v1": torch.tensor(score),
                 "f1_v2": torch.tensor(score_no_leading_space),
@@ -432,3 +433,21 @@ class ICLMetric(Metric):
                 ),
                 "soft_log_v2": torch.tensor(sum(soft_log_score) / len(soft_log_score)),
             }
+
+    def custom_f1_score(self, y_true, y_pred, pos_label=1):
+        y_true = list(y_true)
+        y_pred = list(y_pred)
+        tp = sum((yt == pos_label) and (yp == pos_label) for yt, yp in zip(y_true, y_pred))
+        fp = sum((yt != pos_label) and (yp == pos_label) for yt, yp in zip(y_true, y_pred))
+        fn = sum((yt == pos_label) and (yp != pos_label) for yt, yp in zip(y_true, y_pred))
+
+        if tp + fp == 0 or tp + fn == 0:
+            return 0.0
+
+        precision = tp / (tp + fp)
+        recall = tp / (tp + fn)
+
+        if precision + recall == 0:
+            return 0.0
+
+        return 2 * precision * recall / (precision + recall)
