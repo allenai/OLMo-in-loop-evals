@@ -4,7 +4,9 @@ set -e
 
 TAG=$(python -c 'from olmo_eval.version import VERSION; print("v" + VERSION)')
 
-git pull
+git pull > /dev/null
+git tag -l | xargs git tag -d > /dev/null
+git fetch -t > /dev/null
 
 # Make sure tag/release doesn't already exist.
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://github.com/allenai/OLMo-in-loop-evals/releases/tag/${TAG}")
