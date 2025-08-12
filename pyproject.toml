@@ -15,12 +15,13 @@ license = { file = "LICENSE" }
 dependencies = [
     "torch",
     "torchmetrics",
-    "datasets",
-    "tokenizers",
+    "datasets>=3.6.0,<4",
     "cached-path",
     "requests",
     "packaging",
     "importlib_resources",
+    "tokenizers>=0.19.1,<0.20",
+    "pyarrow>=19.0,<20",    # datasets brings pyarrow, but version 21 breaks things
 ]
 
 [project.urls]

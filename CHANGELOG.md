@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Pinned datasets, tokenizers, pyarrow versions.
+
 ## [v0.8.5](https://github.com/allenai/OLMo-in-loop-evals/releases/tag/v0.8.5) - 2025-07-20
 
 ### Removed

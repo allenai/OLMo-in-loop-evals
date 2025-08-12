@@ -57,3 +57,6 @@ site/
 /wandb/
 /scratch/
 core
+
+# do not check in uv lock
+/uv.lock
