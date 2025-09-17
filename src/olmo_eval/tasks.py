@@ -1652,6 +1652,13 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         + f"\ndoc_text: {doc_text}\ncontinuation: {continuation_str}"
                     )
 
+                #### modify cont str here!!
+                self.fast_mc = False # cannot use fast MC
+                # continuation_str = continuation_str + '\n'
+                # continuation_str = continuation_str + '\n\n'
+                continuation_str = continuation_str.rstrip(" .\n")
+                ####
+
                 # The original implementation did not count the first character (usually the leading space) as
                 # part of the continuation length (e.g., " A", " " is not counted). The OLMES standard does not
                 # do this, but we track both for backwards compatibility.

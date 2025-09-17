@@ -13,7 +13,7 @@ authors = [
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
 dependencies = [
-    "torch",
+    "torch>=2.8.0",
     "torchmetrics",
     "datasets>=3.6.0,<4",
     "cached-path",
