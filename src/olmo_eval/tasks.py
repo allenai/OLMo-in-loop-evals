@@ -180,9 +180,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
 
                 # Sort by continuation ID
                 doc_samples.sort(
-                    key=lambda x: float(x["cont_id"])
-                    if isinstance(x["cont_id"], (int, float))
-                    else 0.0
+                    key=lambda x: (
+                        float(x["cont_id"]) if isinstance(x["cont_id"], (int, float)) else 0.0
+                    )
                 )
 
                 # Create new sample with distractor continuations

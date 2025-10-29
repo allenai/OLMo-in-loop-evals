@@ -78,9 +78,9 @@ class ICLMetric(Metric):
             return
 
         if self.metric_type == "pmi_dc":
-            assert dc_lm_logits is not None, (
-                "PMI_DC acc type selected but no domain conditional logits provided"
-            )
+            assert (
+                dc_lm_logits is not None
+            ), "PMI_DC acc type selected but no domain conditional logits provided"
 
         for idx, (doc_id, cont_id) in enumerate(zip(batch["doc_id"], batch["cont_id"])):
             doc_id = int(doc_id)
