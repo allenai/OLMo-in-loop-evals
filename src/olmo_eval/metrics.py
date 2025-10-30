@@ -295,6 +295,7 @@ class ICLMetric(Metric):
         labels: Optional[List[int]] = None
         if self.metric_type == "f1":
             preds = []
+            preds_no_leading_space = []
             labels = []
 
         for doc_id in loglikelihood_dict:
