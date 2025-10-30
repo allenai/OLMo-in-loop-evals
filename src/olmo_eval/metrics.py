@@ -77,8 +77,6 @@ class ICLMetric(Metric):
             self.labels.append((None, None, None))
             return
 
-        lm_logits = F.log_softmax(lm_logits, dim=-1)
-
         if self.metric_type == "pmi_dc":
             assert (
                 dc_lm_logits is not None
@@ -118,6 +116,10 @@ class ICLMetric(Metric):
                 if is_empty_choice:
                     continue
 
+                # Compute the sum of log probabilities at continuation token indices.
+                # NOTE: -F.cross_entropy("sum") is equivalent to gather(log_softmax(logits), indices).sum()
+                cont_log_probs_sum = -F.cross_entropy(lm_cont_logits, _cont_tokens, reduction="sum")
+
                 log_likelihood: torch.Tensor
                 celoss: torch.Tensor
                 bpb: torch.Tensor
@@ -131,11 +133,12 @@ class ICLMetric(Metric):
                         batch["dc_len"][idx] - 1 : batch["dc_len"][idx] + batch["cont_len"][idx] - 1
                     ]
 
-                    # gather log-probs at continuation token indices but divide by domain conditional prob
-                    log_likelihood = (
-                        torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / torch.gather(dc_lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
+                    dc_cont_log_probs_sum = -F.cross_entropy(
+                        dc_lm_cont_logits, _cont_tokens, reduction="sum"
                     )
+
+                    # gather log-probs at continuation token indices but divide by domain conditional prob
+                    log_likelihood = cont_log_probs_sum / dc_cont_log_probs_sum
                     celoss = -log_likelihood
                     bpb = -log_likelihood  # the normalization factors cancel out
 
@@ -144,56 +147,32 @@ class ICLMetric(Metric):
                     bpb_no_leading_space = bpb
                 elif self.metric_type == "acc" or self.metric_type == "f1":
                     # gather log-probs at continuation token indices
-                    log_likelihood = torch.gather(
-                        lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)
-                    ).sum()
-                    celoss = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len"][idx]
-                    )
-                    bpb = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_byte_len"][idx]
-                        * LOG_2_OF_E
-                    )
+                    log_likelihood = cont_log_probs_sum
+                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
+                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
 
-                    log_likelihood_no_leading_space = torch.gather(
-                        lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)
-                    ).sum()
+                    log_likelihood_no_leading_space = cont_log_probs_sum
                     celoss_no_leading_space = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len_no_leading_space"][idx]
+                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
                     )
                     bpb_no_leading_space = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
+                        -cont_log_probs_sum
                         / batch["cont_byte_len_no_leading_space"][idx]
                         * LOG_2_OF_E
                     )
                 elif self.metric_type in ["len_norm", "ce_loss", "bpb"]:
-                    log_likelihood = (
-                        torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len"][idx]
-                    )
-                    celoss = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len"][idx]
-                    )
-                    bpb = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_byte_len"][idx]
-                        * LOG_2_OF_E
-                    )
+                    log_likelihood = cont_log_probs_sum / batch["cont_str_len"][idx]
+                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
+                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
 
                     log_likelihood_no_leading_space = (
-                        torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len_no_leading_space"][idx]
+                        cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
                     )
                     celoss_no_leading_space = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
-                        / batch["cont_str_len_no_leading_space"][idx]
+                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
                     )
                     bpb_no_leading_space = (
-                        -torch.gather(lm_cont_logits, 1, _cont_tokens.unsqueeze(-1)).sum()
+                        -cont_log_probs_sum
                         / batch["cont_byte_len_no_leading_space"][idx]
                         * LOG_2_OF_E
                     )
