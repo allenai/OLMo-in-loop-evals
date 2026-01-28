@@ -2805,6 +2805,10 @@ LABEL_TO_TASK_MAP_EXPANDED = {
         OEEvalTask,
         {"dataset_path": "mt_mbpp_matlab", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"},
     ),
+    "legalbench_abercrombie_rc_0shot": (
+        OEEvalTask,
+        {"dataset_path": "legalbench", "dataset_name": "rc_0shot", "metric_type": "len_norm"},
+    ),
 }
 
 
