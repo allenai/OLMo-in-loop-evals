@@ -2807,7 +2807,7 @@ LABEL_TO_TASK_MAP_EXPANDED = {
     ),
     "legalbench_abercrombie_rc_0shot": (
         OEEvalTask,
-        {"dataset_path": "legalbench", "dataset_name": "rc_0shot", "metric_type": "len_norm"},
+        {"dataset_path": "legalbench_abercrombie", "dataset_name": "rc_0shot", "metric_type": "len_norm"},
     ),
 }
 
