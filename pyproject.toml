@@ -20,7 +20,7 @@ dependencies = [
     "requests",
     "packaging",
     "importlib_resources",
-    "tokenizers>=0.19.1,<0.20",
+    "tokenizers>=0.19.1,<0.23",
     "pyarrow>=19.0,<20",    # datasets brings pyarrow, but version 21 breaks things
 ]
 
