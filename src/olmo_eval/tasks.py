@@ -2805,31 +2805,6 @@ LABEL_TO_TASK_MAP_EXPANDED = {
         OEEvalTask,
         {"dataset_path": "mt_mbpp_matlab", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"},
     ),
-    # Basic skills BPB (6 tasks)
-    "basic_skills_arithmetic_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_arithmetic", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
-    "basic_skills_coding_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_coding", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
-    "basic_skills_common_knowledge_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_common_knowledge", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
-    "basic_skills_logical_reasoning_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_logical_reasoning", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
-    "basic_skills_pattern_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_pattern", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
-    "basic_skills_string_operations_bpb_5shot": (
-        OEEvalTask,
-        {"dataset_path": "basic_skills_string_operations", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
-    ),
     # Gen tasks BPB (5 tasks)
     "coqa_bpb_5shot": (
         OEEvalTask,
@@ -2851,34 +2826,35 @@ LABEL_TO_TASK_MAP_EXPANDED = {
         OEEvalTask,
         {"dataset_path": "squad", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
     ),
-    # Science/medical BPB (7 tasks)
-    "lab_bench_dbqa_bpb": (
+    # Science/medical RC (6 tasks)
+    "lab_bench_dbqa_rc": (
         OEEvalTask,
-        {"dataset_path": "lab_bench_dbqa", "dataset_name": "bpb", "metric_type": "bpb"},
+        {"dataset_path": "lab_bench_dbqa", "dataset_name": "rc", "metric_type": "acc"},
     ),
-    "lab_bench_protocolqa_bpb": (
+    "lab_bench_protocolqa_rc": (
         OEEvalTask,
-        {"dataset_path": "lab_bench_protocolqa", "dataset_name": "bpb", "metric_type": "bpb"},
+        {"dataset_path": "lab_bench_protocolqa", "dataset_name": "rc", "metric_type": "acc"},
     ),
+    "medmcqa_rc": (
+        OEEvalTask,
+        {"dataset_path": "medmcqa", "dataset_name": "rc", "metric_type": "acc"},
+    ),
+    "medqa_en_rc": (
+        OEEvalTask,
+        {"dataset_path": "medqa_en", "dataset_name": "rc", "metric_type": "acc"},
+    ),
+    "qasper_yesno_rc": (
+        OEEvalTask,
+        {"dataset_path": "qasper_yesno", "dataset_name": "rc", "metric_type": "acc"},
+    ),
+    "sciriff_yesno_rc": (
+        OEEvalTask,
+        {"dataset_path": "sciriff_yesno", "dataset_name": "rc", "metric_type": "acc"},
+    ),
+    # Lambada BPB (single gold answer, BPB only)
     "lambada_bpb": (
         OEEvalTask,
         {"dataset_path": "lambada", "dataset_name": "bpb", "metric_type": "bpb"},
-    ),
-    "medmcqa_bpb": (
-        OEEvalTask,
-        {"dataset_path": "medmcqa", "dataset_name": "bpb", "metric_type": "bpb"},
-    ),
-    "medqa_en_bpb": (
-        OEEvalTask,
-        {"dataset_path": "medqa_en", "dataset_name": "bpb", "metric_type": "bpb"},
-    ),
-    "qasper_yesno_bpb": (
-        OEEvalTask,
-        {"dataset_path": "qasper_yesno", "dataset_name": "bpb", "metric_type": "bpb"},
-    ),
-    "sciriff_yesno_bpb": (
-        OEEvalTask,
-        {"dataset_path": "sciriff_yesno", "dataset_name": "bpb", "metric_type": "bpb"},
     ),
 }
 
