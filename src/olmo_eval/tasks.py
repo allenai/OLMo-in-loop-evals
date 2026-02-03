@@ -1621,7 +1621,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 if self.metric_type in ["ce_loss", "bpb"]:
                     if label_id is None:
                         label_id = 0
-                    if label_id != cont_id and not isinstance(label_id, str):
+                    if label_id != cont_id and not isinstance(label_id, (str, list)):
                         # Skip non-target continuations for ce_loss and bpb
                         continue
                     else:
@@ -1899,10 +1899,6 @@ LABEL_TO_TASK_MAP_ORIG = {
         OEEvalTask,
         {"dataset_path": "boolq", "dataset_name": "rc_5shot", "metric_type": "acc"},
     ),
-    "copa_rc_0shot": (
-        OEEvalTask,
-        {"dataset_path": "copa", "dataset_name": "rc_0shot", "metric_type": "acc"},
-    ),
     "copycolors_10way": (
         OEEvalTask,
         {"dataset_path": "copycolors", "dataset_name": "10way", "metric_type": "acc"},
@@ -2063,10 +2059,6 @@ LABEL_TO_TASK_MAP_ORIG = {
     "boolq_rc_5shot_bpb": (
         OEEvalTask,
         {"dataset_path": "boolq", "dataset_name": "rc_5shot", "metric_type": "bpb"},
-    ),
-    "copa_rc_0shot_bpb": (
-        OEEvalTask,
-        {"dataset_path": "copa", "dataset_name": "rc_0shot", "metric_type": "bpb"},
     ),
     "copycolors_10way_bpb": (
         OEEvalTask,
@@ -2804,6 +2796,57 @@ LABEL_TO_TASK_MAP_EXPANDED = {
     "mt_mbpp_matlab_gold_bpb_3shot": (
         OEEvalTask,
         {"dataset_path": "mt_mbpp_matlab", "dataset_name": "gold_bpb_3shot", "metric_type": "bpb"},
+    ),
+    # Gen tasks BPB (5 tasks)
+    "coqa_bpb_0shot": (
+        OEEvalTask,
+        {"dataset_path": "coqa", "dataset_name": "bpb_0shot", "metric_type": "bpb"},
+    ),
+    "drop_bpb_5shot": (
+        OEEvalTask,
+        {"dataset_path": "drop", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
+    ),
+    "jeopardy_bpb_5shot": (
+        OEEvalTask,
+        {"dataset_path": "jeopardy", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
+    ),
+    "naturalqs_bpb_5shot": (
+        OEEvalTask,
+        {"dataset_path": "naturalqs_open", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
+    ),
+    "squad_bpb_5shot": (
+        OEEvalTask,
+        {"dataset_path": "squad", "dataset_name": "bpb_5shot", "metric_type": "bpb"},
+    ),
+    # Science/medical RC (6 tasks)
+    "lab_bench_dbqa_rc_3shot": (
+        OEEvalTask,
+        {"dataset_path": "lab_bench_dbqa", "dataset_name": "rc_3shot", "metric_type": "acc"},
+    ),
+    "lab_bench_protocolqa_rc_3shot": (
+        OEEvalTask,
+        {"dataset_path": "lab_bench_protocolqa", "dataset_name": "rc_3shot", "metric_type": "acc"},
+    ),
+    "medmcqa_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "medmcqa", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "medqa_en_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "medqa_en", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "qasper_yesno_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "qasper_yesno", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    "sciriff_yesno_rc_5shot": (
+        OEEvalTask,
+        {"dataset_path": "sciriff_yesno", "dataset_name": "rc_5shot", "metric_type": "acc"},
+    ),
+    # Lambada BPB (single gold answer, BPB only)
+    "lambada_bpb_0shot": (
+        OEEvalTask,
+        {"dataset_path": "lambada", "dataset_name": "bpb_0shot", "metric_type": "bpb"},
     ),
 }
 

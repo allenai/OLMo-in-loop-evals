@@ -141,6 +141,7 @@ log_cli = false
 log_cli_level = "DEBUG"
 markers = [
     "gpu",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 filterwarnings = [
     'ignore::FutureWarning:huggingface_hub\.file_download',
