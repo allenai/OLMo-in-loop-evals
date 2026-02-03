@@ -241,9 +241,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             max_seq_len = 128 * math.ceil(max_seq_len / 128)
             self._max_sequence_length = max_seq_len
 
-        assert (
-            self._max_sequence_length != 0
-        ), f'Max sequence length for "{self.dataset_name}" cannot be 0. Found {self.samples} samples.'
+        assert self._max_sequence_length != 0, (
+            f'Max sequence length for "{self.dataset_name}" cannot be 0. Found {self.samples} samples.'
+        )
 
         return self._max_sequence_length
 
@@ -1718,9 +1718,9 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
 
                     # Assert all continuations are length 1
                     for choice in choices:
-                        assert (
-                            len(choice) == 1
-                        ), f"Expected continuation length 1, got {len(choice)}"
+                        assert len(choice) == 1, (
+                            f"Expected continuation length 1, got {len(choice)}"
+                        )
 
                     # Take first token of each continuation
                     choices = [choice[0] for choice in choices]

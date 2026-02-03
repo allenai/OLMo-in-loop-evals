@@ -818,7 +818,7 @@ class TestMCLabelTasks:
         assert isinstance(doc["label"], int)
         assert 0 <= doc["label"] <= 9
         # 10 choices use A-J
-        valid_labels = [f" {chr(65+i)}" for i in range(10)]  # A-J
+        valid_labels = [f" {chr(65 + i)}" for i in range(10)]  # A-J
         assert doc["correct"]["request"]["continuation"] in valid_labels
 
     def test_copycolors_xl_10way(self):
