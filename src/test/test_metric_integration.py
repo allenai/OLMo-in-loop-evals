@@ -298,9 +298,9 @@ def validate_bpb_range(
 
 def validate_accuracy_range(acc: float, task_name: str, scenario: str, expected_acc: float):
     """Validate accuracy is close to expected value."""
-    assert abs(acc - expected_acc) < 0.01, (
-        f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
-    )
+    assert (
+        abs(acc - expected_acc) < 0.01
+    ), f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
 
 
 def get_complete_document_samples(task, num_docs: int = 5):
@@ -342,9 +342,9 @@ class TestTaskLoadingAndStructure:
         """Verify tasks have the expected metric type."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         expected = METRIC_TYPE_BY_TASK.get(task_name)
-        assert task.metric_type == expected, (
-            f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
-        )
+        assert (
+            task.metric_type == expected
+        ), f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
 
     @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
     def test_task_sample_structure(self, task_name: str, tokenizer):
@@ -724,9 +724,9 @@ class TestTaskStructureValidation:
         # Check first few docs have > 1 sample (multiple choice)
         for doc_id in list(sorted(doc_counts.keys()))[:5]:
             count = doc_counts[doc_id]
-            assert count > 1, (
-                f"Task {task_name}: doc_id={doc_id} has only {count} sample, expected >1"
-            )
+            assert (
+                count > 1
+            ), f"Task {task_name}: doc_id={doc_id} has only {count} sample, expected >1"
 
     @pytest.mark.parametrize("task_name", BPB_QA_TASKS)
     def test_bpb_qa_tasks_have_normalized_ids(self, task_name: str, tokenizer):
@@ -735,12 +735,12 @@ class TestTaskStructureValidation:
 
         for i in range(min(10, len(task))):
             sample = task[i]
-            assert sample["label_id"] == 0, (
-                f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
-            )
-            assert sample["cont_id"] == 0, (
-                f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
-            )
+            assert (
+                sample["label_id"] == 0
+            ), f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
+            assert (
+                sample["cont_id"] == 0
+            ), f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
 
 
 # =====================================================
