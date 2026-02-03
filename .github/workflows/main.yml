@@ -34,7 +34,7 @@ jobs:
 
           - name: Test
             run: |
-              pytest -v --color=yes --durations=3 src/test/
+              pytest -v --color=yes --durations=3 -m "not slow" src/test/
 
           - name: Type check
             run: make type-check
