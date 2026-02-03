@@ -14,8 +14,7 @@ Run them manually with: pytest src/test/bpb_playtest.py -v
 Or include slow tests in CI with: pytest -m "slow" src/test/
 """
 
-import math
-from typing import Dict, List, Set
+from typing import Dict, List
 
 import pytest
 import torch
@@ -288,23 +287,9 @@ def validate_bpb_range(
 def validate_accuracy_range(acc: float, task_name: str, scenario: str, expected_acc: float):
     """Validate accuracy is close to expected value."""
     # Allow some tolerance
-    assert abs(acc - expected_acc) < 0.01, (
-        f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
-    )
-
-
-def get_num_choices(task) -> int:
-    """Get the number of choices for a multiple choice task."""
-    if len(task) == 0:
-        return 1
-
-    # Count unique cont_ids for the first doc_id
-    first_doc_id = task[0]["doc_id"]
-    cont_ids = set()
-    for sample in task.samples:
-        if sample["doc_id"] == first_doc_id:
-            cont_ids.add(sample["cont_id"])
-    return len(cont_ids)
+    assert (
+        abs(acc - expected_acc) < 0.01
+    ), f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
 
 
 def get_complete_document_samples(task, num_docs: int = 5):
@@ -348,9 +333,9 @@ class TestTaskLoadingAndStructure:
         """Verify new tasks have the expected metric type."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         expected = EXPECTED_METRIC_TYPES.get(task_name)
-        assert task.metric_type == expected, (
-            f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
-        )
+        assert (
+            task.metric_type == expected
+        ), f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
 
     @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
     def test_new_tasks_sample_structure(self, task_name: str, tokenizer):
@@ -481,7 +466,9 @@ class TestAccuracyMetricComputation:
     """Test accuracy metric computation for RC tasks."""
 
     @pytest.mark.parametrize("task_name", RC_TASKS)
-    def test_correct_answer_logits_produce_full_accuracy(self, task_name: str, tokenizer, vocab_size):
+    def test_correct_answer_logits_produce_full_accuracy(
+        self, task_name: str, tokenizer, vocab_size
+    ):
         """Logits favoring correct answer should produce accuracy = 1.0."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="acc")
@@ -507,9 +494,8 @@ class TestAccuracyMetricComputation:
 
     @pytest.mark.parametrize("task_name", RC_TASKS)
     def test_random_logits_produce_low_accuracy(self, task_name: str, tokenizer, vocab_size):
-        """Random logits should produce accuracy ≈ 1/num_choices."""
+        """Random logits should produce accuracy in valid range."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
-        num_choices = get_num_choices(task)
         metric = ICLMetric(metric_type="acc")
 
         # Get complete documents
@@ -555,8 +541,12 @@ class TestAccuracyMetricComputation:
 class TestLenNormMetricComputation:
     """Test len_norm metric computation."""
 
-    @pytest.mark.parametrize("task_name", MMLU_TASKS + ["hellaswag", "piqa", "arc_challenge", "openbook_qa"])
-    def test_correct_answer_logits_produce_full_accuracy(self, task_name: str, tokenizer, vocab_size):
+    @pytest.mark.parametrize(
+        "task_name", MMLU_TASKS + ["hellaswag", "piqa", "arc_challenge", "openbook_qa"]
+    )
+    def test_correct_answer_logits_produce_full_accuracy(
+        self, task_name: str, tokenizer, vocab_size
+    ):
         """Logits favoring correct answer should produce len_norm accuracy = 1.0."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="len_norm")
@@ -659,9 +649,9 @@ class TestCoreBenchmarksRegression:
     ):
         """Verify core benchmarks have correct metric types."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
-        assert task.metric_type == expected_metric_type, (
-            f"Task {task_name}: metric_type {task.metric_type} != expected {expected_metric_type}"
-        )
+        assert (
+            task.metric_type == expected_metric_type
+        ), f"Task {task_name}: metric_type {task.metric_type} != expected {expected_metric_type}"
 
 
 # =====================================================
@@ -767,12 +757,12 @@ class TestEdgeCases:
         # All samples should have label_id = 0 (normalized during prep)
         for i in range(min(10, len(task))):
             sample = task[i]
-            assert sample["label_id"] == 0, (
-                f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
-            )
-            assert sample["cont_id"] == 0, (
-                f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
-            )
+            assert (
+                sample["label_id"] == 0
+            ), f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
+            assert (
+                sample["cont_id"] == 0
+            ), f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
 
     @pytest.mark.parametrize("task_name", LIST_LABEL_TASKS)
     def test_list_label_tasks_metric_computation(self, task_name: str, tokenizer, vocab_size):
@@ -814,9 +804,7 @@ class TestEdgeCases:
 
         # Each doc should have exactly 1 sample for BPB tasks
         for doc_id, count in list(doc_counts.items())[:20]:
-            assert count == 1, (
-                f"Task {task_name}: doc_id={doc_id} has {count} samples, expected 1"
-            )
+            assert count == 1, f"Task {task_name}: doc_id={doc_id} has {count} samples, expected 1"
 
 
 # =====================================================
