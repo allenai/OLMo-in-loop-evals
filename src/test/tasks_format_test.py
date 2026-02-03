@@ -48,6 +48,55 @@ def load_first_request(dataset_path: str, dataset_name: str) -> dict:
                 return json.loads(f.readline().strip())
 
 
+def load_first_doc_requests(dataset_path: str, dataset_name: str) -> dict:
+    """
+    Load all requests for the first document (doc_id=0) from an oe-eval task dataset.
+
+    Returns a dict with:
+        - "label": the correct choice index
+        - "correct": the request where idx == label (correct continuation)
+        - "wrong": list of requests where idx != label (wrong continuations)
+    """
+    rel_path = f"oe_eval_tasks/{dataset_path}"
+    if dataset_name:
+        rel_path = f"{rel_path}/{dataset_name}"
+
+    requests_for_doc_0 = []
+    with get_data_path(rel_path) as path:
+        data_file = path / "requests.jsonl.gz"
+        if not data_file.exists():
+            data_file = path / "requests.jsonl"
+
+        if data_file.suffix == ".gz":
+            with gzip.open(data_file, "rt", encoding="utf-8") as f:
+                for line in f:
+                    req = json.loads(line.strip())
+                    if req["doc_id"] == 0:
+                        requests_for_doc_0.append(req)
+                    else:
+                        break  # doc_id=0 requests are contiguous at the start
+        else:
+            with open(data_file, "r") as f:
+                for line in f:
+                    req = json.loads(line.strip())
+                    if req["doc_id"] == 0:
+                        requests_for_doc_0.append(req)
+                    else:
+                        break
+
+    label = requests_for_doc_0[0]["label"]
+    correct = None
+    wrong = []
+
+    for req in requests_for_doc_0:
+        if req["idx"] == label:
+            correct = req
+        else:
+            wrong.append(req)
+
+    return {"label": label, "correct": correct, "wrong": wrong}
+
+
 class TestListLabelTasks:
     """
     Tasks with LIST labels - these have multiple valid gold continuations.
@@ -253,6 +302,9 @@ class TestIntegerLabelTasks:
     """
     Tasks with INTEGER labels - these are multiple choice tasks.
     The label field is an integer index (0-indexed) of the correct choice.
+
+    For each document, there are multiple requests (one per choice).
+    The label indicates which choice is correct.
     """
 
     def test_arc_easy_rc_5shot(self):
@@ -260,132 +312,146 @@ class TestIntegerLabelTasks:
         ARC-Easy: AI2 Reasoning Challenge (Easy set).
 
         First instance: question about communication technology.
-        Label 0 means first choice "cellular telephone" is correct.
+        4 choices (labels 0-3).
         """
-        request = load_first_request("arc_easy", "rc_5shot")
+        doc = load_first_doc_requests("arc_easy", "rc_5shot")
 
-        assert request["label"] == 0
-        assert request["request"]["continuation"] == " cellular telephone"
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " cellular telephone"
+        assert doc["wrong"][0]["request"]["continuation"] == " television"
 
     def test_arc_challenge_rc_5shot(self):
         """
         ARC-Challenge: AI2 Reasoning Challenge (Challenge set).
 
-        First instance: science question about classifying objects.
-        Label 3 means fourth choice is correct.
+        First instance: science question about investigation procedures.
+        4 choices (labels 0-3).
         """
-        request = load_first_request("arc_challenge", "rc_5shot")
+        doc = load_first_doc_requests("arc_challenge", "rc_5shot")
 
-        assert request["label"] == 3
-        assert request["request"]["continuation"] == " Put the objects in groups."
+        assert doc["label"] == 3
+        assert (
+            doc["correct"]["request"]["continuation"] == " Record the details of the investigation."
+        )
+        assert doc["wrong"][0]["request"]["continuation"] == " Put the objects in groups."
 
     def test_hellaswag_rc_5shot(self):
         """
         HellaSwag: Commonsense NLI about grounded situations.
 
         First instance: completing a sentence about changing your name.
-        Label 3 means fourth choice is correct.
+        4 choices (labels 0-3).
         """
-        request = load_first_request("hellaswag", "rc_5shot")
+        doc = load_first_doc_requests("hellaswag", "rc_5shot")
 
-        assert request["label"] == 3
-        assert "change your name" in request["request"]["continuation"]
+        assert doc["label"] == 3
+        assert "don't have to be a resident" in doc["correct"]["request"]["continuation"]
+        assert "may be able to change your name" in doc["wrong"][0]["request"]["continuation"]
 
     def test_piqa_rc_5shot(self):
         """
         PIQA: Physical Intuition QA.
 
-        First instance: question about cooking.
-        Label 0 means first choice is correct.
+        First instance: question about cooking sausages.
+        2 choices (labels 0-1). Both continuations start similarly but differ.
         """
-        request = load_first_request("piqa", "rc_5shot")
+        doc = load_first_doc_requests("piqa", "rc_5shot")
 
-        assert request["label"] == 0
-        assert "frying pan" in request["request"]["continuation"]
+        assert doc["label"] == 0
+        assert "frying pan" in doc["correct"]["request"]["continuation"]
+        # Both choices start with "In a frying pan" - they differ later in the text
 
     def test_winogrande_rc_5shot(self):
         """
         WinoGrande: Commonsense coreference resolution.
 
         First instance: sentence completion about cases.
-        Binary choice (0 or 1).
+        2 choices (labels 0-1). The continuation is the same but context differs.
         """
-        request = load_first_request("winogrande", "rc_5shot")
+        doc = load_first_doc_requests("winogrande", "rc_5shot")
 
-        assert request["label"] == 1
-        assert request["request"]["continuation"] == " always got the easier cases."
+        assert doc["label"] == 1
+        # WinoGrande has same continuation for both choices - context determines correct one
+        assert doc["correct"]["request"]["continuation"] == " always got the easier cases."
+        assert doc["wrong"][0]["request"]["continuation"] == " always got the easier cases."
 
     def test_boolq_rc_5shot(self):
         """
         BoolQ: Boolean questions (yes/no).
 
-        First instance: answer is "yes" (label 0).
-        Binary choice: 0=yes, 1=no.
+        First instance: answer is "yes".
+        2 choices: 0=yes, 1=no.
         """
-        request = load_first_request("boolq", "rc_5shot")
+        doc = load_first_doc_requests("boolq", "rc_5shot")
 
-        assert request["label"] == 0
-        assert request["request"]["continuation"] == " yes"
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " yes"
+        assert doc["wrong"][0]["request"]["continuation"] == " no"
 
     def test_openbookqa_rc_5shot(self):
         """
         OpenBookQA: Science questions with open book.
 
-        First instance: question about deep sea animals.
+        First instance: question about what lacks the ability to see light.
         4 choices (labels 0-3).
         """
-        request = load_first_request("openbookqa", "rc_5shot")
+        doc = load_first_doc_requests("openbookqa", "rc_5shot")
 
-        assert request["label"] == 0
-        assert request["request"]["continuation"] == " Deep sea animals"
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " Deep sea animals"
+        assert doc["wrong"][0]["request"]["continuation"] == " fish"
 
     def test_csqa_rc_5shot(self):
         """
         CommonsenseQA: Commonsense question answering.
 
-        First instance: answer is "bank".
+        First instance: question about where to keep money safe.
         5 choices (labels 0-4).
         """
-        request = load_first_request("csqa", "rc_5shot")
+        doc = load_first_doc_requests("csqa", "rc_5shot")
 
-        assert request["label"] == 0
-        assert request["request"]["continuation"] == " bank"
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " bank"
+        assert doc["wrong"][0]["request"]["continuation"] == " library"
 
     def test_socialiqa_rc_5shot(self):
         """
         SocialIQA: Social intelligence QA.
 
-        First instance: answer is "cheating".
+        First instance: question about how someone would be described.
         3 choices (labels 0-2).
         """
-        request = load_first_request("socialiqa", "rc_5shot")
+        doc = load_first_doc_requests("socialiqa", "rc_5shot")
 
-        assert request["label"] == 1
-        assert request["request"]["continuation"] == " cheating"
+        assert doc["label"] == 1
+        assert doc["correct"]["request"]["continuation"] == " a bad child"
+        assert doc["wrong"][0]["request"]["continuation"] == " cheating"
 
     def test_copa_rc_0shot(self):
         """
         COPA: Choice of Plausible Alternatives.
 
-        First instance: cause/effect about toilet filling with water.
-        Binary choice (0 or 1).
+        First instance: cause/effect about turning on the faucet.
+        2 choices (labels 0-1).
         """
-        request = load_first_request("copa", "rc_0shot")
+        doc = load_first_doc_requests("copa", "rc_0shot")
 
-        assert request["label"] == 1
-        assert request["request"]["continuation"] == " the toilet filled with water."
+        assert doc["label"] == 1
+        assert doc["correct"]["request"]["continuation"] == " water flowed from the spout."
+        assert doc["wrong"][0]["request"]["continuation"] == " the toilet filled with water."
 
     def test_sciq_rc_0shot(self):
         """
         SciQ: Science exam questions.
 
-        First instance: answer is "Linnaeus" (the taxonomist).
+        First instance: question about who developed a classification system.
         4 choices (labels 0-3).
         """
-        request = load_first_request("sciq", "rc_0shot")
+        doc = load_first_doc_requests("sciq", "rc_0shot")
 
-        assert request["label"] == 3
-        assert request["request"]["continuation"] == " Linnaeus"
+        assert doc["label"] == 3
+        assert doc["correct"]["request"]["continuation"] == " darwin"
+        assert doc["wrong"][0]["request"]["continuation"] == " Linnaeus"
 
     def test_lab_bench_dbqa_rc(self):
         """
@@ -394,10 +460,11 @@ class TestIntegerLabelTasks:
         First instance: question about a gene name.
         Note: All instances in this dataset have label=3 (4th choice is always correct).
         """
-        request = load_first_request("lab_bench_dbqa", "rc")
+        doc = load_first_doc_requests("lab_bench_dbqa", "rc")
 
-        assert request["label"] == 3
-        assert request["request"]["continuation"] == " MNX1"
+        assert doc["label"] == 3
+        assert doc["correct"]["request"]["continuation"] == " PCSK5"
+        assert doc["wrong"][0]["request"]["continuation"] == " MNX1"
 
     def test_lab_bench_protocolqa_rc(self):
         """
@@ -406,10 +473,17 @@ class TestIntegerLabelTasks:
         First instance: question about PBMC isolation protocol.
         Labels in this dataset range from 3-6 (varying number of choices).
         """
-        request = load_first_request("lab_bench_protocolqa", "rc")
+        doc = load_first_doc_requests("lab_bench_protocolqa", "rc")
 
-        assert request["label"] == 3
-        assert request["request"]["continuation"].startswith(" Do not use NaCl")
+        assert doc["label"] == 3
+        assert (
+            doc["correct"]["request"]["continuation"]
+            == " Use 0.85g of NaCl in step 2 to avoid PBMC lysis."
+        )
+        assert (
+            doc["wrong"][0]["request"]["continuation"]
+            == " Do not use NaCl in step 2 to avoid PBMC lysis."
+        )
 
 
 class TestNoneLabelTasks:
