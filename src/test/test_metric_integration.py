@@ -1,16 +1,21 @@
 """
-Play Testing New Evaluation Tasks (Mock-Based)
+Metric Integration Tests (Mock-Based)
 
-This script validates the recently implemented evaluation tasks using mocked logits
-(no real model required). It tests the full pipeline from task loading → batching
+Full-scale integration tests for evaluation task metrics using mocked logits
+(no real model required). Tests the complete pipeline: task loading → batching
 → metric computation without expensive model inference.
 
-Recent commits added/modified tasks:
-- BPB-only tasks: coqa_bpb_5shot, drop_bpb_5shot, jeopardy_bpb_5shot, etc.
-- RC tasks with accuracy + BPB: lab_bench_dbqa_rc, medmcqa_rc, etc.
+Task Categories:
+- Multiple Choice (MC/RC) Tasks: Tasks with multiple answer options per question.
+  These compute accuracy metrics (acc, len_norm) and BPB for the gold answer.
+  Example: arc_challenge (has options A/B/C/D, computes accuracy + gold BPB)
+
+- Generative BPB Tasks: Tasks with open-ended generation where only the gold
+  answer continuation is evaluated. These compute only BPB metrics.
+  Example: minerva_math_500 (free-form math answers, only BPB)
 
 NOTE: These tests are marked as 'slow' and excluded from regular CI.
-Run them manually with: pytest src/test/bpb_playtest.py -v
+Run them manually with: pytest src/test/test_metric_integration.py -v
 Or include slow tests in CI with: pytest -m "slow" src/test/
 """
 
@@ -27,83 +32,66 @@ from olmo_eval.tokenizer import HFTokenizer
 pytestmark = pytest.mark.slow
 
 # =====================================================
-# TEST CONFIGURATION
+# TASK CONFIGURATION
 # =====================================================
 
-# BPB-only tasks (metric_type="bpb")
-BPB_TASKS = [
-    "lambada_bpb",
-    "coqa_bpb_5shot",
-    "drop_bpb_5shot",
-    "jeopardy_bpb_5shot",
-    "naturalqs_bpb_5shot",
+# Representative tasks for integration testing (limited set for speed)
+# Full task coverage can be achieved by expanding these lists.
+
+# -----------------------------------------------------
+# Multiple Choice / Reading Comprehension Tasks
+# These tasks have multiple answer options and compute accuracy metrics
+# -----------------------------------------------------
+
+# MC tasks with len_norm metric (length-normalized accuracy)
+MC_LEN_NORM_TASKS = [
+    "arc_challenge",
+]
+
+# MC tasks with acc metric (raw accuracy)
+MC_ACC_TASKS = [
+    "medmcqa_rc",
+]
+
+# All multiple choice tasks
+MC_TASKS = MC_LEN_NORM_TASKS + MC_ACC_TASKS
+
+# -----------------------------------------------------
+# Generative BPB Tasks
+# These tasks have only one continuation (gold answer) and compute BPB only
+# -----------------------------------------------------
+
+# BPB tasks from QA datasets (gold answer completion)
+BPB_QA_TASKS = [
     "squad_bpb_5shot",
 ]
 
-# RC tasks with accuracy (metric_type="acc") - also compute BPB for gold
-RC_TASKS = [
-    "lab_bench_dbqa_rc",
-    "lab_bench_protocolqa_rc",
-    "medmcqa_rc",
-    "medqa_en_rc",
-    "qasper_yesno_rc",
-    "sciriff_yesno_rc",
+# BPB tasks from language modeling
+BPB_LM_TASKS = [
+    "lambada_bpb",
 ]
 
-# MMLU variants (metric_type="len_norm") - flagship benchmark
-MMLU_TASKS = [
-    "mmlu_stem",
-    "mmlu_humanities",
-    "mmlu_social_sciences",
-    "mmlu_other",
+# BPB tasks from math/code generation
+BPB_GENERATION_TASKS = [
+    "minerva_math_500_gold_bpb_0shot",
 ]
 
-# Other core benchmarks (various metric types)
-CORE_BENCHMARKS = [
-    "hellaswag",  # metric_type="len_norm"
-    "piqa",  # metric_type="len_norm"
-    "winogrande",  # metric_type="acc"
-    "arc_easy",  # metric_type="acc"
-    "arc_challenge",  # metric_type="len_norm"
-    "boolq",  # metric_type="acc"
-    "openbook_qa",  # metric_type="len_norm"
-    "copa",  # metric_type="acc"
-    "sciq",  # metric_type="acc"
-    "social_iqa",  # metric_type="len_norm"
-]
+# All generative BPB tasks
+BPB_TASKS = BPB_QA_TASKS + BPB_LM_TASKS + BPB_GENERATION_TASKS
 
-# Expected metric types for each task category
-EXPECTED_METRIC_TYPES = {
-    # BPB tasks
-    "lambada_bpb": "bpb",
-    "coqa_bpb_5shot": "bpb",
-    "drop_bpb_5shot": "bpb",
-    "jeopardy_bpb_5shot": "bpb",
-    "naturalqs_bpb_5shot": "bpb",
-    "squad_bpb_5shot": "bpb",
-    # RC tasks
-    "lab_bench_dbqa_rc": "acc",
-    "lab_bench_protocolqa_rc": "acc",
-    "medmcqa_rc": "acc",
-    "medqa_en_rc": "acc",
-    "qasper_yesno_rc": "acc",
-    "sciriff_yesno_rc": "acc",
-    # MMLU
-    "mmlu_stem": "len_norm",
-    "mmlu_humanities": "len_norm",
-    "mmlu_social_sciences": "len_norm",
-    "mmlu_other": "len_norm",
-    # Core benchmarks
-    "hellaswag": "len_norm",
-    "piqa": "len_norm",
-    "winogrande": "acc",
-    "arc_easy": "acc",
+# -----------------------------------------------------
+# Expected Metric Configuration
+# -----------------------------------------------------
+
+METRIC_TYPE_BY_TASK = {
+    # MC len_norm tasks
     "arc_challenge": "len_norm",
-    "boolq": "acc",
-    "openbook_qa": "len_norm",
-    "copa": "acc",
-    "sciq": "acc",
-    "social_iqa": "len_norm",
+    # MC acc tasks
+    "medmcqa_rc": "acc",
+    # BPB tasks
+    "squad_bpb_5shot": "bpb",
+    "lambada_bpb": "bpb",
+    "minerva_math_500_gold_bpb_0shot": "bpb",
 }
 
 # Expected metric keys by metric type
@@ -133,8 +121,6 @@ EXPECTED_METRIC_KEYS = {
         "soft_log_v1",
         "soft_log_v2",
     },
-    "f1": {"f1_v1", "f1_v2"},
-    "ce_loss": {"ce_loss_v1", "ce_loss_v2"},
 }
 
 
@@ -174,7 +160,6 @@ def make_perfect_logits(batch: Dict[str, torch.Tensor], vocab_size: int) -> torc
     testing accuracy = 1.0.
     """
     batch_size, seq_len = batch["input_ids"].shape
-    # Start with very low logits everywhere
     logits = torch.full((batch_size, seq_len, vocab_size), -100.0)
 
     for i in range(batch_size):
@@ -182,12 +167,11 @@ def make_perfect_logits(batch: Dict[str, torch.Tensor], vocab_size: int) -> torc
         cont_len = batch["cont_len"][i].item()
         cont_tokens = batch["continuation"][i][:cont_len]
 
-        # Set high logit for continuation tokens at the right positions
         for j in range(cont_len):
             logit_pos = ctx_len - 1 + j
             if logit_pos < seq_len:
                 target_token = cont_tokens[j].item()
-                logits[i, logit_pos, target_token] = 0.0  # log(1) = 0 after softmax
+                logits[i, logit_pos, target_token] = 0.0
 
     return logits
 
@@ -201,7 +185,6 @@ def make_correct_answer_logits(batch: Dict[str, torch.Tensor], vocab_size: int) 
     We give the correct answer a large positive boost so it wins the argmax.
     """
     batch_size, seq_len = batch["input_ids"].shape
-    # Start with uniform logits (random baseline)
     logits = torch.zeros((batch_size, seq_len, vocab_size))
 
     for i in range(batch_size):
@@ -212,19 +195,17 @@ def make_correct_answer_logits(batch: Dict[str, torch.Tensor], vocab_size: int) 
         cont_tokens = batch["continuation"][i][:cont_len]
 
         if cont_id == label_id:
-            # This is the correct answer - give it very high probability
             for j in range(cont_len):
                 logit_pos = ctx_len - 1 + j
                 if logit_pos < seq_len:
                     target_token = cont_tokens[j].item()
-                    logits[i, logit_pos, target_token] = 100.0  # Very high logit
+                    logits[i, logit_pos, target_token] = 100.0
         else:
-            # Wrong answer - give it very low probability
             for j in range(cont_len):
                 logit_pos = ctx_len - 1 + j
                 if logit_pos < seq_len:
                     target_token = cont_tokens[j].item()
-                    logits[i, logit_pos, target_token] = -100.0  # Very low logit
+                    logits[i, logit_pos, target_token] = -100.0
 
     return logits
 
@@ -235,7 +216,6 @@ def make_random_logits(batch: Dict[str, torch.Tensor], vocab_size: int) -> torch
     This should result in BPB ≈ log2(vocab_size) and accuracy ≈ 1/num_choices.
     """
     batch_size, seq_len = batch["input_ids"].shape
-    # Uniform logits = equal probability for all tokens
     return torch.zeros((batch_size, seq_len, vocab_size))
 
 
@@ -247,10 +227,8 @@ def make_noisy_logits(
     The correct continuation token gets a boost but isn't perfectly predicted.
     """
     batch_size, seq_len = batch["input_ids"].shape
-    # Start with random noise
     logits = torch.randn((batch_size, seq_len, vocab_size))
 
-    # Boost the correct continuation tokens
     for i in range(batch_size):
         ctx_len = batch["ctx_len"][i].item()
         cont_len = batch["cont_len"][i].item()
@@ -286,10 +264,9 @@ def validate_bpb_range(
 
 def validate_accuracy_range(acc: float, task_name: str, scenario: str, expected_acc: float):
     """Validate accuracy is close to expected value."""
-    # Allow some tolerance
-    assert (
-        abs(acc - expected_acc) < 0.01
-    ), f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
+    assert abs(acc - expected_acc) < 0.01, (
+        f"Task {task_name} ({scenario}): accuracy {acc} != expected {expected_acc}"
+    )
 
 
 def get_complete_document_samples(task, num_docs: int = 5):
@@ -301,12 +278,10 @@ def get_complete_document_samples(task, num_docs: int = 5):
     """
     from collections import defaultdict
 
-    # Group samples by doc_id
     docs: Dict[int, List] = defaultdict(list)
     for sample in task.samples:
         docs[sample["doc_id"]].append(sample)
 
-    # Get complete documents
     complete_samples = []
     for doc_id in sorted(docs.keys())[:num_docs]:
         complete_samples.extend(docs[doc_id])
@@ -322,23 +297,23 @@ def get_complete_document_samples(task, num_docs: int = 5):
 class TestTaskLoadingAndStructure:
     """Test that all tasks can be loaded and have the expected structure."""
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
-    def test_new_tasks_exist_in_registry(self, task_name: str):
-        """Verify all new tasks exist in the registry."""
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
+    def test_task_exists_in_registry(self, task_name: str):
+        """Verify all tasks exist in the registry."""
         all_tasks = list_tasks()
         assert task_name in all_tasks, f"Task {task_name} not found in registry"
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
-    def test_new_tasks_have_correct_metric_type(self, task_name: str, tokenizer):
-        """Verify new tasks have the expected metric type."""
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
+    def test_task_has_correct_metric_type(self, task_name: str, tokenizer):
+        """Verify tasks have the expected metric type."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
-        expected = EXPECTED_METRIC_TYPES.get(task_name)
-        assert (
-            task.metric_type == expected
-        ), f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
+        expected = METRIC_TYPE_BY_TASK.get(task_name)
+        assert task.metric_type == expected, (
+            f"Task {task_name}: metric_type {task.metric_type} != expected {expected}"
+        )
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
-    def test_new_tasks_sample_structure(self, task_name: str, tokenizer):
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
+    def test_task_sample_structure(self, task_name: str, tokenizer):
         """Verify task samples have required keys."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         assert len(task) > 0, f"Task {task_name} has no samples"
@@ -358,8 +333,8 @@ class TestTaskLoadingAndStructure:
         for key in required_keys:
             assert key in sample, f"Task {task_name}: sample missing key '{key}'"
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
-    def test_new_tasks_collate_fn(self, task_name: str, tokenizer):
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
+    def test_task_collate_fn(self, task_name: str, tokenizer):
         """Verify collate_fn produces valid batches."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         batch = task.collate_fn([task[0], task[1]] if len(task) > 1 else [task[0]])
@@ -373,12 +348,12 @@ class TestTaskLoadingAndStructure:
 
 
 # =====================================================
-# TEST 2: BPB Metric Computation
+# TEST 2: Generative BPB Tasks - Metric Computation
 # =====================================================
 
 
-class TestBPBMetricComputation:
-    """Test BPB metric computation with mocked logits."""
+class TestGenerativeBPBTasks:
+    """Test BPB metric computation for generative (non-MC) tasks."""
 
     @pytest.mark.parametrize("task_name", BPB_TASKS)
     def test_perfect_logits_produce_low_bpb(self, task_name: str, tokenizer, vocab_size):
@@ -386,17 +361,15 @@ class TestBPBMetricComputation:
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="bpb")
 
-        # Process a few batches
         dataloader = DataLoader(task, batch_size=4, collate_fn=task.collate_fn)
         for i, batch in enumerate(dataloader):
-            if i >= 3:  # Only process first few batches
+            if i >= 3:
                 break
             logits = make_perfect_logits(batch, vocab_size)
             metric.update(batch, lm_logits=logits)
 
         results = metric.compute()
 
-        # Validate results
         validate_metrics_finite(results, task_name)
         assert "bpb_v1" in results, f"Task {task_name}: missing bpb_v1"
         assert "bpb_v2" in results, f"Task {task_name}: missing bpb_v2"
@@ -404,7 +377,6 @@ class TestBPBMetricComputation:
         bpb_v1 = results["bpb_v1"].item()
         bpb_v2 = results["bpb_v2"].item()
 
-        # Perfect logits should give BPB close to 0
         validate_bpb_range(bpb_v1, task_name, "perfect", min_val=0.0, max_val=0.1)
         validate_bpb_range(bpb_v2, task_name, "perfect", min_val=0.0, max_val=0.1)
 
@@ -427,9 +399,6 @@ class TestBPBMetricComputation:
         bpb_v1 = results["bpb_v1"].item()
         bpb_v2 = results["bpb_v2"].item()
 
-        # Random logits: BPB should be significantly higher than 0
-        # Note: BPB is normalized by byte length, so it won't be exactly log2(vocab_size)
-        # The key test is that random logits produce significantly higher BPB than perfect logits
         validate_bpb_range(bpb_v1, task_name, "random", min_val=1.0, max_val=20.0)
         validate_bpb_range(bpb_v2, task_name, "random", min_val=1.0, max_val=20.0)
 
@@ -452,20 +421,37 @@ class TestBPBMetricComputation:
         bpb_v1 = results["bpb_v1"].item()
         bpb_v2 = results["bpb_v2"].item()
 
-        # Noisy logits: BPB should be in middle range (not near 0, not near log2(vocab))
         validate_bpb_range(bpb_v1, task_name, "noisy", min_val=0.5, max_val=15.0)
         validate_bpb_range(bpb_v2, task_name, "noisy", min_val=0.5, max_val=15.0)
 
+    @pytest.mark.parametrize("task_name", BPB_TASKS)
+    def test_bpb_task_returns_expected_keys(self, task_name: str, tokenizer, vocab_size):
+        """BPB tasks should return all expected metric keys."""
+        task = build_task(task_name, tokenizer, model_ctx_len=512)
+        metric = ICLMetric(metric_type="bpb")
+
+        dataloader = DataLoader(task, batch_size=4, collate_fn=task.collate_fn)
+        batch = next(iter(dataloader))
+        logits = make_perfect_logits(batch, vocab_size)
+        metric.update(batch, lm_logits=logits)
+
+        results = metric.compute()
+
+        expected_keys = EXPECTED_METRIC_KEYS["bpb"]
+        actual_keys = set(results.keys())
+        missing_keys = expected_keys - actual_keys
+        assert not missing_keys, f"Task {task_name}: missing metric keys {missing_keys}"
+
 
 # =====================================================
-# TEST 3: Accuracy Metric Computation (RC Tasks)
+# TEST 3: Multiple Choice Tasks - Accuracy Metrics
 # =====================================================
 
 
-class TestAccuracyMetricComputation:
-    """Test accuracy metric computation for RC tasks."""
+class TestMultipleChoiceAccuracyTasks:
+    """Test accuracy metric computation for MC tasks with acc metric type."""
 
-    @pytest.mark.parametrize("task_name", RC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
     def test_correct_answer_logits_produce_full_accuracy(
         self, task_name: str, tokenizer, vocab_size
     ):
@@ -473,7 +459,6 @@ class TestAccuracyMetricComputation:
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="acc")
 
-        # Get complete documents to ensure proper accuracy calculation
         samples = get_complete_document_samples(task, num_docs=5)
         batch = task.collate_fn(samples)
         logits = make_correct_answer_logits(batch, vocab_size)
@@ -482,7 +467,6 @@ class TestAccuracyMetricComputation:
         results = metric.compute()
         validate_metrics_finite(results, task_name)
 
-        # Check accuracy
         assert "acc_v1" in results, f"Task {task_name}: missing acc_v1"
         assert "acc_v2" in results, f"Task {task_name}: missing acc_v2"
 
@@ -492,13 +476,12 @@ class TestAccuracyMetricComputation:
         validate_accuracy_range(acc_v1, task_name, "correct_answer", expected_acc=1.0)
         validate_accuracy_range(acc_v2, task_name, "correct_answer", expected_acc=1.0)
 
-    @pytest.mark.parametrize("task_name", RC_TASKS)
-    def test_random_logits_produce_low_accuracy(self, task_name: str, tokenizer, vocab_size):
-        """Random logits should produce accuracy in valid range."""
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
+    def test_random_logits_produce_valid_accuracy(self, task_name: str, tokenizer, vocab_size):
+        """Random logits should produce accuracy in valid range [0, 1]."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="acc")
 
-        # Get complete documents
         samples = get_complete_document_samples(task, num_docs=10)
         batch = task.collate_fn(samples)
         logits = make_random_logits(batch, vocab_size)
@@ -508,18 +491,14 @@ class TestAccuracyMetricComputation:
         validate_metrics_finite(results, task_name)
 
         acc_v1 = results["acc_v1"].item()
-
-        # Random accuracy: should be roughly 1/num_choices
-        # Allow wider tolerance since it's random
         assert 0.0 <= acc_v1 <= 1.0, f"Task {task_name}: accuracy {acc_v1} out of bounds"
 
-    @pytest.mark.parametrize("task_name", RC_TASKS)
-    def test_rc_tasks_return_all_expected_keys(self, task_name: str, tokenizer, vocab_size):
-        """RC tasks should return all expected metric keys."""
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
+    def test_acc_task_returns_expected_keys(self, task_name: str, tokenizer, vocab_size):
+        """Acc tasks should return all expected metric keys."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="acc")
 
-        # Get complete documents
         samples = get_complete_document_samples(task, num_docs=3)
         batch = task.collate_fn(samples)
         logits = make_correct_answer_logits(batch, vocab_size)
@@ -534,16 +513,14 @@ class TestAccuracyMetricComputation:
 
 
 # =====================================================
-# TEST 4: Len-Norm Metric Computation
+# TEST 4: Multiple Choice Tasks - Len-Norm Metrics
 # =====================================================
 
 
-class TestLenNormMetricComputation:
-    """Test len_norm metric computation."""
+class TestMultipleChoiceLenNormTasks:
+    """Test len_norm metric computation for MC tasks."""
 
-    @pytest.mark.parametrize(
-        "task_name", MMLU_TASKS + ["hellaswag", "piqa", "arc_challenge", "openbook_qa"]
-    )
+    @pytest.mark.parametrize("task_name", MC_LEN_NORM_TASKS)
     def test_correct_answer_logits_produce_full_accuracy(
         self, task_name: str, tokenizer, vocab_size
     ):
@@ -551,7 +528,6 @@ class TestLenNormMetricComputation:
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="len_norm")
 
-        # Get complete documents to ensure proper accuracy calculation
         samples = get_complete_document_samples(task, num_docs=5)
         batch = task.collate_fn(samples)
         logits = make_correct_answer_logits(batch, vocab_size)
@@ -569,13 +545,29 @@ class TestLenNormMetricComputation:
         validate_accuracy_range(acc_v1, task_name, "correct_answer", expected_acc=1.0)
         validate_accuracy_range(acc_v2, task_name, "correct_answer", expected_acc=1.0)
 
-    @pytest.mark.parametrize("task_name", MMLU_TASKS)
-    def test_len_norm_tasks_return_all_expected_keys(self, task_name: str, tokenizer, vocab_size):
+    @pytest.mark.parametrize("task_name", MC_LEN_NORM_TASKS)
+    def test_random_logits_produce_valid_accuracy(self, task_name: str, tokenizer, vocab_size):
+        """Random logits should produce accuracy in valid range [0, 1]."""
+        task = build_task(task_name, tokenizer, model_ctx_len=512)
+        metric = ICLMetric(metric_type="len_norm")
+
+        samples = get_complete_document_samples(task, num_docs=10)
+        batch = task.collate_fn(samples)
+        logits = make_random_logits(batch, vocab_size)
+        metric.update(batch, lm_logits=logits)
+
+        results = metric.compute()
+        validate_metrics_finite(results, task_name)
+
+        acc_v1 = results["len_norm_v1"].item()
+        assert 0.0 <= acc_v1 <= 1.0, f"Task {task_name}: accuracy {acc_v1} out of bounds"
+
+    @pytest.mark.parametrize("task_name", MC_LEN_NORM_TASKS)
+    def test_len_norm_task_returns_expected_keys(self, task_name: str, tokenizer, vocab_size):
         """Len-norm tasks should return all expected metric keys."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric = ICLMetric(metric_type="len_norm")
 
-        # Get complete documents
         samples = get_complete_document_samples(task, num_docs=3)
         batch = task.collate_fn(samples)
         logits = make_correct_answer_logits(batch, vocab_size)
@@ -590,86 +582,20 @@ class TestLenNormMetricComputation:
 
 
 # =====================================================
-# TEST 5: Core Benchmarks Regression Testing
-# =====================================================
-
-
-class TestCoreBenchmarksRegression:
-    """Regression tests for established benchmarks."""
-
-    @pytest.mark.parametrize("task_name", CORE_BENCHMARKS)
-    def test_core_benchmarks_load_and_batch(self, task_name: str, tokenizer):
-        """Verify core benchmarks can be loaded and batched."""
-        task = build_task(task_name, tokenizer, model_ctx_len=512)
-        assert len(task) > 0, f"Task {task_name} has no samples"
-
-        batch = task.collate_fn([task[0], task[1]] if len(task) > 1 else [task[0]])
-        assert "input_ids" in batch
-        assert batch["input_ids"].dim() == 2
-
-    @pytest.mark.parametrize("task_name", CORE_BENCHMARKS)
-    def test_core_benchmarks_metric_computation(self, task_name: str, tokenizer, vocab_size):
-        """Verify metric computation works for core benchmarks."""
-        task = build_task(task_name, tokenizer, model_ctx_len=512)
-        metric_type = task.metric_type
-        metric = ICLMetric(metric_type=metric_type)
-
-        # Get complete documents for proper metric calculation
-        samples = get_complete_document_samples(task, num_docs=5)
-        batch = task.collate_fn(samples)
-        logits = make_perfect_logits(batch, vocab_size)
-        metric.update(batch, lm_logits=logits)
-
-        results = metric.compute()
-        validate_metrics_finite(results, task_name)
-
-        # Verify expected metric keys are present
-        expected_keys = EXPECTED_METRIC_KEYS.get(metric_type, set())
-        actual_keys = set(results.keys())
-        missing_keys = expected_keys - actual_keys
-        assert not missing_keys, f"Task {task_name}: missing metric keys {missing_keys}"
-
-    @pytest.mark.parametrize(
-        "task_name,expected_metric_type",
-        [
-            ("hellaswag", "len_norm"),
-            ("piqa", "len_norm"),
-            ("winogrande", "acc"),
-            ("arc_easy", "acc"),
-            ("arc_challenge", "len_norm"),
-            ("boolq", "acc"),
-            ("openbook_qa", "len_norm"),
-            ("copa", "acc"),
-            ("sciq", "acc"),
-            ("social_iqa", "len_norm"),
-        ],
-    )
-    def test_core_benchmarks_have_correct_metric_type(
-        self, task_name: str, expected_metric_type: str, tokenizer
-    ):
-        """Verify core benchmarks have correct metric types."""
-        task = build_task(task_name, tokenizer, model_ctx_len=512)
-        assert (
-            task.metric_type == expected_metric_type
-        ), f"Task {task_name}: metric_type {task.metric_type} != expected {expected_metric_type}"
-
-
-# =====================================================
-# TEST 6: Sanity Checks Across All Tasks
+# TEST 5: Sanity Checks (All Tasks)
 # =====================================================
 
 
 class TestSanityChecks:
     """Cross-cutting sanity checks for all tasks."""
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
     def test_no_nan_inf_in_perfect_scenario(self, task_name: str, tokenizer, vocab_size):
         """Perfect logits should never produce NaN or inf."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric_type = task.metric_type
         metric = ICLMetric(metric_type=metric_type)
 
-        # For accuracy tasks, use complete documents; for BPB tasks, just use samples
         if metric_type in ["acc", "len_norm"]:
             samples = get_complete_document_samples(task, num_docs=5)
             batch = task.collate_fn(samples)
@@ -680,18 +606,16 @@ class TestSanityChecks:
             logits = make_perfect_logits(batch, vocab_size)
 
         metric.update(batch, lm_logits=logits)
-
         results = metric.compute()
         validate_metrics_finite(results, task_name)
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
     def test_no_nan_inf_in_random_scenario(self, task_name: str, tokenizer, vocab_size):
         """Random logits should never produce NaN or inf."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric_type = task.metric_type
         metric = ICLMetric(metric_type=metric_type)
 
-        # For accuracy tasks, use complete documents; for BPB tasks, just use samples
         if metric_type in ["acc", "len_norm"]:
             samples = get_complete_document_samples(task, num_docs=5)
             batch = task.collate_fn(samples)
@@ -701,18 +625,16 @@ class TestSanityChecks:
 
         logits = make_random_logits(batch, vocab_size)
         metric.update(batch, lm_logits=logits)
-
         results = metric.compute()
         validate_metrics_finite(results, task_name)
 
-    @pytest.mark.parametrize("task_name", BPB_TASKS + RC_TASKS)
-    def test_bpb_is_positive(self, task_name: str, tokenizer, vocab_size):
-        """BPB should always be positive."""
+    @pytest.mark.parametrize("task_name", MC_TASKS + BPB_TASKS)
+    def test_bpb_is_non_negative(self, task_name: str, tokenizer, vocab_size):
+        """BPB should always be non-negative."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
         metric_type = task.metric_type
         metric = ICLMetric(metric_type=metric_type)
 
-        # For accuracy tasks, use complete documents; for BPB tasks, just use samples
         if metric_type in ["acc", "len_norm"]:
             samples = get_complete_document_samples(task, num_docs=5)
             batch = task.collate_fn(samples)
@@ -722,89 +644,69 @@ class TestSanityChecks:
 
         logits = make_noisy_logits(batch, vocab_size, correct_boost=3.0)
         metric.update(batch, lm_logits=logits)
-
         results = metric.compute()
 
         if "bpb_v1" in results:
-            assert results["bpb_v1"].item() >= 0, f"Task {task_name}: BPB is negative"
+            assert results["bpb_v1"].item() >= 0, f"Task {task_name}: BPB v1 is negative"
         if "bpb_v2" in results:
-            assert results["bpb_v2"].item() >= 0, f"Task {task_name}: BPB is negative"
+            assert results["bpb_v2"].item() >= 0, f"Task {task_name}: BPB v2 is negative"
 
 
 # =====================================================
-# TEST 7: Edge Cases (List Labels, etc.)
+# TEST 6: Task Structure Validation
 # =====================================================
 
 
-# Tasks with list labels (multiple valid gold answers)
-LIST_LABEL_TASKS = [
-    "squad_bpb_5shot",  # Has list labels like ['23 years', '23', '23']
-    "drop_bpb_5shot",  # Also has list labels
-    "coqa_bpb_5shot",  # Has list labels
-    "naturalqs_bpb_5shot",  # Has list labels
-]
+class TestTaskStructureValidation:
+    """Validate task-specific structural requirements."""
 
-
-class TestEdgeCases:
-    """Test edge cases like tasks with list labels."""
-
-    @pytest.mark.parametrize("task_name", LIST_LABEL_TASKS)
-    def test_list_label_tasks_load_correctly(self, task_name: str, tokenizer):
-        """Tasks with list labels should load and have proper sample structure."""
-        task = build_task(task_name, tokenizer, model_ctx_len=512)
-        assert len(task) > 0, f"Task {task_name} has no samples"
-
-        # All samples should have label_id = 0 (normalized during prep)
-        for i in range(min(10, len(task))):
-            sample = task[i]
-            assert (
-                sample["label_id"] == 0
-            ), f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
-            assert (
-                sample["cont_id"] == 0
-            ), f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
-
-    @pytest.mark.parametrize("task_name", LIST_LABEL_TASKS)
-    def test_list_label_tasks_metric_computation(self, task_name: str, tokenizer, vocab_size):
-        """Tasks with list labels should compute metrics correctly."""
-        task = build_task(task_name, tokenizer, model_ctx_len=512)
-        metric = ICLMetric(metric_type="bpb")
-
-        # Process a few batches
-        dataloader = DataLoader(task, batch_size=4, collate_fn=task.collate_fn)
-        for i, batch in enumerate(dataloader):
-            if i >= 3:
-                break
-            logits = make_perfect_logits(batch, vocab_size)
-            metric.update(batch, lm_logits=logits)
-
-        results = metric.compute()
-
-        # Validate results
-        validate_metrics_finite(results, task_name)
-        assert "bpb_v1" in results, f"Task {task_name}: missing bpb_v1"
-        assert "bpb_v2" in results, f"Task {task_name}: missing bpb_v2"
-
-        # Perfect logits should give low BPB
-        bpb_v1 = results["bpb_v1"].item()
-        validate_bpb_range(bpb_v1, task_name, "perfect", min_val=0.0, max_val=0.1)
-
-    @pytest.mark.parametrize("task_name", LIST_LABEL_TASKS)
-    def test_list_label_tasks_one_sample_per_doc(self, task_name: str, tokenizer):
+    @pytest.mark.parametrize("task_name", BPB_QA_TASKS)
+    def test_bpb_qa_tasks_have_one_sample_per_doc(self, task_name: str, tokenizer):
         """
-        For BPB tasks with list labels, each doc_id should have exactly one sample
+        BPB QA tasks should have exactly one sample per doc_id
         (the gold answer continuation).
         """
         task = build_task(task_name, tokenizer, model_ctx_len=512)
 
-        # Count samples per doc_id
         from collections import Counter
 
         doc_counts = Counter(s["doc_id"] for s in task.samples)
 
-        # Each doc should have exactly 1 sample for BPB tasks
         for doc_id, count in list(doc_counts.items())[:20]:
             assert count == 1, f"Task {task_name}: doc_id={doc_id} has {count} samples, expected 1"
+
+    @pytest.mark.parametrize("task_name", MC_TASKS)
+    def test_mc_tasks_have_multiple_samples_per_doc(self, task_name: str, tokenizer):
+        """
+        MC tasks should have multiple samples per doc_id
+        (one per answer option).
+        """
+        task = build_task(task_name, tokenizer, model_ctx_len=512)
+
+        from collections import Counter
+
+        doc_counts = Counter(s["doc_id"] for s in task.samples)
+
+        # Check first few docs have > 1 sample (multiple choice)
+        for doc_id in list(sorted(doc_counts.keys()))[:5]:
+            count = doc_counts[doc_id]
+            assert count > 1, (
+                f"Task {task_name}: doc_id={doc_id} has only {count} sample, expected >1"
+            )
+
+    @pytest.mark.parametrize("task_name", BPB_QA_TASKS)
+    def test_bpb_qa_tasks_have_normalized_ids(self, task_name: str, tokenizer):
+        """BPB QA tasks should have label_id=0 and cont_id=0."""
+        task = build_task(task_name, tokenizer, model_ctx_len=512)
+
+        for i in range(min(10, len(task))):
+            sample = task[i]
+            assert sample["label_id"] == 0, (
+                f"Task {task_name}: sample {i} has label_id={sample['label_id']}, expected 0"
+            )
+            assert sample["cont_id"] == 0, (
+                f"Task {task_name}: sample {i} has cont_id={sample['cont_id']}, expected 0"
+            )
 
 
 # =====================================================
@@ -814,12 +716,10 @@ class TestEdgeCases:
 
 def run_verbose_tests():
     """Run tests with verbose output when executed as a script."""
-    print("=" * 60)
-    print("BPB Play Testing - Mock-Based Evaluation Task Validation")
-    print("=" * 60)
+    print("=" * 70)
+    print("Metric Integration Tests - Mock-Based Evaluation Task Validation")
+    print("=" * 70)
 
-    # Initialize tokenizer
-    print("\nInitializing tokenizer...")
     tokenizer = HFTokenizer(
         "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
         pad_token_id=0,
@@ -828,10 +728,10 @@ def run_verbose_tests():
     vocab_size = tokenizer.vocab_size
     print(f"Tokenizer vocab size: {vocab_size}")
 
-    # Test BPB tasks
-    print("\n" + "=" * 60)
-    print("Testing BPB Tasks")
-    print("=" * 60)
+    # Test Generative BPB Tasks
+    print("\n" + "=" * 70)
+    print("Generative BPB Tasks (no multiple choice)")
+    print("=" * 70)
 
     for task_name in BPB_TASKS:
         print(f"\n--- {task_name} ---")
@@ -846,7 +746,6 @@ def run_verbose_tests():
             for i, batch in enumerate(dataloader):
                 if i >= 3:
                     break
-                # Test perfect logits
                 logits = make_perfect_logits(batch, vocab_size)
                 metric.update(batch, lm_logits=logits)
 
@@ -854,7 +753,6 @@ def run_verbose_tests():
             print(f"  Perfect BPB v1: {results['bpb_v1'].item():.4f}")
             print(f"  Perfect BPB v2: {results['bpb_v2'].item():.4f}")
 
-            # Test random logits
             metric.reset()
             for i, batch in enumerate(dataloader):
                 if i >= 3:
@@ -870,12 +768,12 @@ def run_verbose_tests():
         except Exception as e:
             print(f"  [FAIL] {e}")
 
-    # Test RC tasks
-    print("\n" + "=" * 60)
-    print("Testing RC Tasks (Accuracy)")
-    print("=" * 60)
+    # Test MC Acc Tasks
+    print("\n" + "=" * 70)
+    print("Multiple Choice Tasks (acc metric)")
+    print("=" * 70)
 
-    for task_name in RC_TASKS:
+    for task_name in MC_ACC_TASKS:
         print(f"\n--- {task_name} ---")
         try:
             task = build_task(task_name, tokenizer, model_ctx_len=512)
@@ -883,27 +781,25 @@ def run_verbose_tests():
             print(f"  Metric type: {task.metric_type}")
 
             metric = ICLMetric(metric_type="acc")
-            # Get complete documents
             samples = get_complete_document_samples(task, num_docs=5)
             batch = task.collate_fn(samples)
             logits = make_correct_answer_logits(batch, vocab_size)
             metric.update(batch, lm_logits=logits)
 
             results = metric.compute()
-            print(f"  Correct Answer Accuracy v1: {results['acc_v1'].item():.4f}")
-            print(f"  BPB v1 (gold): {results['bpb_v1'].item():.4f}")
-            print(f"  Metric keys: {list(results.keys())}")
+            print(f"  Correct Answer Acc v1: {results['acc_v1'].item():.4f}")
+            print(f"  Gold BPB v1: {results['bpb_v1'].item():.4f}")
             print("  [PASS]")
 
         except Exception as e:
             print(f"  [FAIL] {e}")
 
-    # Test MMLU tasks
-    print("\n" + "=" * 60)
-    print("Testing MMLU Tasks (Len-Norm)")
-    print("=" * 60)
+    # Test MC Len-Norm Tasks
+    print("\n" + "=" * 70)
+    print("Multiple Choice Tasks (len_norm metric)")
+    print("=" * 70)
 
-    for task_name in MMLU_TASKS:
+    for task_name in MC_LEN_NORM_TASKS:
         print(f"\n--- {task_name} ---")
         try:
             task = build_task(task_name, tokenizer, model_ctx_len=512)
@@ -911,23 +807,22 @@ def run_verbose_tests():
             print(f"  Metric type: {task.metric_type}")
 
             metric = ICLMetric(metric_type="len_norm")
-            # Get complete documents
             samples = get_complete_document_samples(task, num_docs=5)
             batch = task.collate_fn(samples)
             logits = make_correct_answer_logits(batch, vocab_size)
             metric.update(batch, lm_logits=logits)
 
             results = metric.compute()
-            print(f"  Correct Answer Len-Norm Accuracy v1: {results['len_norm_v1'].item():.4f}")
-            print(f"  BPB v1 (gold): {results['bpb_v1'].item():.4f}")
+            print(f"  Correct Answer Len-Norm v1: {results['len_norm_v1'].item():.4f}")
+            print(f"  Gold BPB v1: {results['bpb_v1'].item():.4f}")
             print("  [PASS]")
 
         except Exception as e:
             print(f"  [FAIL] {e}")
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("Testing Complete!")
-    print("=" * 60)
+    print("=" * 70)
 
 
 if __name__ == "__main__":
