@@ -1,24 +1,55 @@
 """
 Test file documenting and validating the expected label formats for all oe-eval tasks.
 
-This file serves as documentation for the different label formats used across tasks:
+This file serves as documentation for the different label formats used across tasks.
 
-1. LIST LABELS (multiple gold continuations):
-   - coqa, drop, naturalqs_open, squad
-   - These are QA/reading comprehension tasks where multiple answer formulations are valid
-   - The code in tasks.py handles these with: `isinstance(label_id, (str, list))`
+=== TEST CLASSES AND COVERAGE ===
 
-2. STRING LABELS (single gold continuation):
-   - jeopardy, gsm8k, minerva_math_*, codex_mbpp, mt_mbpp_*
-   - These have exactly one correct answer as a string
+TestListLabelTasks (5 tasks):
+    Tasks with LIST labels - multiple valid gold continuations.
+    - coqa, drop, naturalqs_open, squad, lambada
+    - The code in tasks.py handles these with: `isinstance(label_id, (str, list))`
 
-3. INTEGER LABELS (multiple choice index):
-   - RC (reading comprehension) tasks like arc_easy, arc_challenge, etc.
-   - The label is the index of the correct choice (0, 1, 2, 3, ...)
+TestStringLabelTasks (28 tasks):
+    Tasks with STRING labels - exactly one correct answer as a string.
+    - jeopardy, gsm8k
+    - codex_mbpp (0shot, 3shot)
+    - minerva_math_* (8 variants: 500, algebra, counting_and_probability,
+      geometry, intermediate_algebra, number_theory, prealgebra, precalculus)
+    - mt_mbpp_* (17 languages: bash, c, cpp, csharp, go, haskell, java,
+      javascript, matlab, php, python, r, ruby, rust, scala, swift, typescript)
 
-4. NONE LABELS:
-   - codex_humaneval
-   - No explicit label provided
+TestIntegerLabelTasks (24 tasks):
+    Tasks with INTEGER labels using RC format - continuations are actual answer text.
+    - arc_easy, arc_challenge, hellaswag, piqa, winogrande, boolq,
+      openbookqa, csqa, socialiqa, sciq
+    - lab_bench_dbqa, lab_bench_protocolqa
+    - medmcqa, medqa_en, qasper_yesno, sciriff_yesno
+    - basic_skills_* (6 variants: arithmetic, coding, common_knowledge,
+      logical_reasoning, pattern, string_operations)
+
+TestMCLabelTasks (25 tasks):
+    Tasks with INTEGER labels using MC format - continuations are letter labels
+    (" A", " B", " C", " D") instead of actual answer text.
+    - Same tasks as TestIntegerLabelTasks but in MC format
+    - copycolors (10way, xl_10way)
+
+TestNoneLabelTasks (2 tasks):
+    Tasks with no explicit label - evaluated by code execution.
+    - codex_humaneval (0shot, 3shot)
+
+=== LABEL FORMAT DETAILS ===
+
+1. LIST LABELS: label is a list of acceptable answers
+   Example: ["white", "white", "white", "white"] or ["23 years", "23", "23"]
+
+2. STRING LABELS: label is a single string answer
+   Example: "sound" or "18" or "def remove_Occ(s,ch):..."
+
+3. INTEGER LABELS: label is the 0-indexed correct choice
+   Example: 0, 1, 2, or 3 for a 4-choice question
+
+4. NONE LABELS: label is None (correctness determined by code execution)
 """
 
 import gzip
@@ -106,14 +137,14 @@ class TestListLabelTasks:
         if label_id != cont_id and not isinstance(label_id, (str, list)):
     """
 
-    def test_coqa_bpb_5shot(self):
+    def test_coqa_bpb_0shot(self):
         """
         CoQA: Conversational QA with multiple annotator answers.
 
         First instance has 4 annotators who all answered "white".
         Label is a list of all annotator responses.
         """
-        request = load_first_request("coqa", "bpb_5shot")
+        request = load_first_request("coqa", "bpb_0shot")
 
         # Label is a list of annotator answers (can have duplicates)
         assert request["label"] == ["white", "white", "white", "white"]
@@ -166,6 +197,18 @@ class TestListLabelTasks:
         # Continuation uses the first/canonical answer
         assert request["request"]["continuation"] == " 23 years"
 
+    def test_lambada_bpb_0shot(self):
+        """
+        LAMBADA: Language Modeling Broadened to Account for Discourse Aspects.
+
+        Predict the final word of a passage. Label is a list with the target word.
+        """
+        request = load_first_request("lambada", "bpb_0shot")
+
+        # Label is a list with the target word
+        assert request["label"] == ["signs"]
+        assert request["request"]["continuation"] == " signs"
+
 
 class TestStringLabelTasks:
     """
@@ -217,6 +260,14 @@ class TestStringLabelTasks:
 
         # Continuation starts with the function definition
         assert request["request"]["continuation"].startswith("def remove_Occ(s,ch):")
+
+    def test_codex_mbpp_gold_bpb_0shot(self):
+        """MBPP 0-shot: Same format as 3-shot but with leading space in continuation."""
+        request = load_first_request("codex_mbpp", "gold_bpb_0shot")
+
+        assert request["label"].startswith("def remove_Occ(s,ch):")
+        # 0-shot has leading space in continuation
+        assert request["request"]["continuation"].startswith(" def remove_Occ(s,ch):")
 
     def test_minerva_math_500_gold_bpb_0shot(self):
         """
@@ -427,19 +478,6 @@ class TestIntegerLabelTasks:
         assert doc["correct"]["request"]["continuation"] == " a bad child"
         assert doc["wrong"][0]["request"]["continuation"] == " cheating"
 
-    def test_copa_rc_0shot(self):
-        """
-        COPA: Choice of Plausible Alternatives.
-
-        First instance: cause/effect about turning on the faucet.
-        2 choices (labels 0-1).
-        """
-        doc = load_first_doc_requests("copa", "rc_0shot")
-
-        assert doc["label"] == 1
-        assert doc["correct"]["request"]["continuation"] == " water flowed from the spout."
-        assert doc["wrong"][0]["request"]["continuation"] == " the toilet filled with water."
-
     def test_sciq_rc_0shot(self):
         """
         SciQ: Science exam questions.
@@ -453,27 +491,27 @@ class TestIntegerLabelTasks:
         assert doc["correct"]["request"]["continuation"] == " darwin"
         assert doc["wrong"][0]["request"]["continuation"] == " Linnaeus"
 
-    def test_lab_bench_dbqa_rc(self):
+    def test_lab_bench_dbqa_rc_3shot(self):
         """
         Lab Bench DBQA: Database QA for scientific literature.
 
         First instance: question about a gene name.
         Note: All instances in this dataset have label=3 (4th choice is always correct).
         """
-        doc = load_first_doc_requests("lab_bench_dbqa", "rc")
+        doc = load_first_doc_requests("lab_bench_dbqa", "rc_3shot")
 
         assert doc["label"] == 3
         assert doc["correct"]["request"]["continuation"] == " PCSK5"
         assert doc["wrong"][0]["request"]["continuation"] == " MNX1"
 
-    def test_lab_bench_protocolqa_rc(self):
+    def test_lab_bench_protocolqa_rc_3shot(self):
         """
         Lab Bench ProtocolQA: Protocol understanding for lab procedures.
 
         First instance: question about PBMC isolation protocol.
         Labels in this dataset range from 3-6 (varying number of choices).
         """
-        doc = load_first_doc_requests("lab_bench_protocolqa", "rc")
+        doc = load_first_doc_requests("lab_bench_protocolqa", "rc_3shot")
 
         assert doc["label"] == 3
         assert (
@@ -484,6 +522,311 @@ class TestIntegerLabelTasks:
             doc["wrong"][0]["request"]["continuation"]
             == " Do not use NaCl in step 2 to avoid PBMC lysis."
         )
+
+    def test_medmcqa_rc_5shot(self):
+        """
+        MedMCQA: Medical multiple choice QA.
+
+        First instance: question about myelinated nerve fibers.
+        4 choices (labels 0-3).
+        """
+        doc = load_first_doc_requests("medmcqa", "rc_5shot")
+
+        assert doc["label"] == 0
+        assert "myelinated fibers" in doc["correct"]["request"]["continuation"]
+
+    def test_medqa_en_rc_5shot(self):
+        """
+        MedQA English: Medical QA from licensing exams.
+
+        4 choices (labels 0-3).
+        """
+        doc = load_first_doc_requests("medqa_en", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+    def test_qasper_yesno_rc_5shot(self):
+        """
+        QASPER Yes/No: Scientific paper QA with yes/no answers.
+
+        2 choices: Yes (0), No (1).
+        """
+        doc = load_first_doc_requests("qasper_yesno", "rc_5shot")
+
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " Yes"
+        assert doc["wrong"][0]["request"]["continuation"] == " No"
+
+    def test_sciriff_yesno_rc_5shot(self):
+        """
+        SciRIFF Yes/No: Scientific reasoning with yes/no answers.
+
+        2 choices: Yes (0), No (1).
+        """
+        doc = load_first_doc_requests("sciriff_yesno", "rc_5shot")
+
+        assert doc["label"] == 0
+        assert doc["correct"]["request"]["continuation"] == " Yes"
+        assert doc["wrong"][0]["request"]["continuation"] == " No"
+
+    def test_basic_skills_arithmetic_rc_5shot(self):
+        """
+        Basic Skills Arithmetic: Simple math problems.
+
+        4 choices with numeric answers.
+        """
+        doc = load_first_doc_requests("basic_skills_arithmetic", "rc_5shot")
+
+        assert doc["label"] == 3
+        assert doc["correct"]["request"]["continuation"] == " 32"
+
+    def test_basic_skills_coding_rc_5shot(self):
+        """
+        Basic Skills Coding: Code understanding problems.
+
+        4 choices.
+        """
+        doc = load_first_doc_requests("basic_skills_coding", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+    def test_basic_skills_common_knowledge_rc_5shot(self):
+        """
+        Basic Skills Common Knowledge: General knowledge questions.
+
+        4 choices.
+        """
+        doc = load_first_doc_requests("basic_skills_common_knowledge", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+    def test_basic_skills_logical_reasoning_rc_5shot(self):
+        """
+        Basic Skills Logical Reasoning: Logic puzzles.
+
+        4 choices.
+        """
+        doc = load_first_doc_requests("basic_skills_logical_reasoning", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+    def test_basic_skills_pattern_rc_5shot(self):
+        """
+        Basic Skills Pattern: Pattern recognition.
+
+        4 choices.
+        """
+        doc = load_first_doc_requests("basic_skills_pattern", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+    def test_basic_skills_string_operations_rc_5shot(self):
+        """
+        Basic Skills String Operations: String manipulation problems.
+
+        4 choices.
+        """
+        doc = load_first_doc_requests("basic_skills_string_operations", "rc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 3
+
+
+class TestMCLabelTasks:
+    """
+    Tasks with MC (Multiple Choice) format - these use letter labels (" A", " B", etc.)
+    instead of actual answer text.
+
+    The label is still an integer index, but continuations are letter choices.
+    These can use fast_mc=True for faster inference since continuations are single tokens.
+    """
+
+    def test_arc_challenge_mc_5shot(self):
+        """
+        ARC-Challenge MC format: Letter labels instead of answer text.
+
+        4 choices: A, B, C, D.
+        """
+        doc = load_first_doc_requests("arc_challenge", "mc_5shot")
+
+        assert doc["label"] == 3
+        assert doc["correct"]["request"]["continuation"] == " D"
+        assert doc["wrong"][0]["request"]["continuation"] == " A"
+
+    def test_arc_easy_mc_5shot(self):
+        """ARC-Easy MC format."""
+        doc = load_first_doc_requests("arc_easy", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        # MC format uses letter labels
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_boolq_mc_5shot(self):
+        """BoolQ MC format: A=Yes, B=No."""
+        doc = load_first_doc_requests("boolq", "mc_5shot")
+
+        assert doc["label"] in [0, 1]
+        assert doc["correct"]["request"]["continuation"] in [" A", " B"]
+
+    def test_hellaswag_mc_5shot(self):
+        """HellaSwag MC format."""
+        doc = load_first_doc_requests("hellaswag", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_piqa_mc_5shot(self):
+        """PIQA MC format: 2 choices."""
+        doc = load_first_doc_requests("piqa", "mc_5shot")
+
+        assert doc["label"] in [0, 1]
+        assert doc["correct"]["request"]["continuation"] in [" A", " B"]
+
+    def test_winogrande_mc_5shot(self):
+        """WinoGrande MC format: 2 choices."""
+        doc = load_first_doc_requests("winogrande", "mc_5shot")
+
+        assert doc["label"] in [0, 1]
+        assert doc["correct"]["request"]["continuation"] in [" A", " B"]
+
+    def test_csqa_mc_5shot(self):
+        """CommonsenseQA MC format: 5 choices."""
+        doc = load_first_doc_requests("csqa", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D", " E"]
+
+    def test_openbookqa_mc_5shot(self):
+        """OpenBookQA MC format."""
+        doc = load_first_doc_requests("openbookqa", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_socialiqa_mc_5shot(self):
+        """SocialIQA MC format: 3 choices."""
+        doc = load_first_doc_requests("socialiqa", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C"]
+
+    def test_sciq_mc_5shot(self):
+        """SciQ MC format."""
+        doc = load_first_doc_requests("sciq", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_lab_bench_dbqa_mc_3shot(self):
+        """Lab Bench DBQA MC format."""
+        doc = load_first_doc_requests("lab_bench_dbqa", "mc_3shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"].startswith(" ")
+        # Letter label format
+        assert len(doc["correct"]["request"]["continuation"]) == 2
+
+    def test_lab_bench_protocolqa_mc_3shot(self):
+        """Lab Bench ProtocolQA MC format."""
+        doc = load_first_doc_requests("lab_bench_protocolqa", "mc_3shot")
+
+        assert isinstance(doc["label"], int)
+
+    def test_medmcqa_mc_5shot(self):
+        """MedMCQA MC format."""
+        doc = load_first_doc_requests("medmcqa", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_medqa_en_mc_5shot(self):
+        """MedQA MC format."""
+        doc = load_first_doc_requests("medqa_en", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_qasper_yesno_mc_5shot(self):
+        """QASPER Yes/No MC format."""
+        doc = load_first_doc_requests("qasper_yesno", "mc_5shot")
+
+        assert doc["label"] in [0, 1]
+        assert doc["correct"]["request"]["continuation"] in [" A", " B"]
+
+    def test_sciriff_yesno_mc_5shot(self):
+        """SciRIFF Yes/No MC format."""
+        doc = load_first_doc_requests("sciriff_yesno", "mc_5shot")
+
+        assert doc["label"] in [0, 1]
+        assert doc["correct"]["request"]["continuation"] in [" A", " B"]
+
+    def test_basic_skills_arithmetic_mc_5shot(self):
+        """Basic Skills Arithmetic MC format."""
+        doc = load_first_doc_requests("basic_skills_arithmetic", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_basic_skills_coding_mc_5shot(self):
+        """Basic Skills Coding MC format."""
+        doc = load_first_doc_requests("basic_skills_coding", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_basic_skills_common_knowledge_mc_5shot(self):
+        """Basic Skills Common Knowledge MC format."""
+        doc = load_first_doc_requests("basic_skills_common_knowledge", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_basic_skills_logical_reasoning_mc_5shot(self):
+        """Basic Skills Logical Reasoning MC format."""
+        doc = load_first_doc_requests("basic_skills_logical_reasoning", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_basic_skills_pattern_mc_5shot(self):
+        """Basic Skills Pattern MC format."""
+        doc = load_first_doc_requests("basic_skills_pattern", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_basic_skills_string_operations_mc_5shot(self):
+        """Basic Skills String Operations MC format."""
+        doc = load_first_doc_requests("basic_skills_string_operations", "mc_5shot")
+
+        assert isinstance(doc["label"], int)
+        assert doc["correct"]["request"]["continuation"] in [" A", " B", " C", " D"]
+
+    def test_copycolors_10way(self):
+        """
+        CopyColors: 10-way classification of color sequences.
+
+        Uses letter labels A through J (10 choices).
+        """
+        doc = load_first_doc_requests("copycolors", "10way")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 9
+        # 10 choices use A-J
+        valid_labels = [f" {chr(65+i)}" for i in range(10)]  # A-J
+        assert doc["correct"]["request"]["continuation"] in valid_labels
+
+    def test_copycolors_xl_10way(self):
+        """CopyColors XL: Longer sequences, same 10-way format."""
+        doc = load_first_doc_requests("copycolors", "xl_10way")
+
+        assert isinstance(doc["label"], int)
+        assert 0 <= doc["label"] <= 9
 
 
 class TestNoneLabelTasks:

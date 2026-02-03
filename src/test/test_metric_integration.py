@@ -5,14 +5,30 @@ Full-scale integration tests for evaluation task metrics using mocked logits
 (no real model required). Tests the complete pipeline: task loading → batching
 → metric computation without expensive model inference.
 
-Task Categories:
+=== FORMAT-METRIC INTERACTIONS TESTED ===
+
+1. Label Types:
+   - LIST labels: squad, drop (nested [[answer]]), lambada
+   - STRING labels: minerva_math_500
+   - INTEGER labels: arc_challenge, medmcqa (RC format), arc_challenge_mc (MC format)
+   - NONE labels: codex_humaneval (code execution tasks)
+
+2. Continuation Formats:
+   - RC format: Multi-token continuations (actual answer text)
+   - MC format: Single-token continuations (letter labels " A", " B")
+
+3. Metric Types:
+   - acc: Raw accuracy (medmcqa, arc_challenge_mc)
+   - len_norm: Length-normalized accuracy (arc_challenge)
+   - bpb: Bits per byte (all BPB tasks)
+
+=== TASK CATEGORIES ===
+
 - Multiple Choice (MC/RC) Tasks: Tasks with multiple answer options per question.
   These compute accuracy metrics (acc, len_norm) and BPB for the gold answer.
-  Example: arc_challenge (has options A/B/C/D, computes accuracy + gold BPB)
 
 - Generative BPB Tasks: Tasks with open-ended generation where only the gold
   answer continuation is evaluated. These compute only BPB metrics.
-  Example: minerva_math_500 (free-form math answers, only BPB)
 
 NOTE: These tests are marked as 'slow' and excluded from regular CI.
 Run them manually with: pytest src/test/test_metric_integration.py -v
@@ -50,11 +66,17 @@ MC_LEN_NORM_TASKS = [
 
 # MC tasks with acc metric (raw accuracy)
 MC_ACC_TASKS = [
-    "medmcqa_rc",
+    "medmcqa_rc_5shot",
+]
+
+# MC format tasks (single-token letter labels " A", " B" instead of answer text)
+# Tests that metrics work with single-token continuations
+MC_FORMAT_TASKS = [
+    "arc_challenge_mc_5shot",
 ]
 
 # All multiple choice tasks
-MC_TASKS = MC_LEN_NORM_TASKS + MC_ACC_TASKS
+MC_TASKS = MC_LEN_NORM_TASKS + MC_ACC_TASKS + MC_FORMAT_TASKS
 
 # -----------------------------------------------------
 # Generative BPB Tasks
@@ -63,35 +85,47 @@ MC_TASKS = MC_LEN_NORM_TASKS + MC_ACC_TASKS
 
 # BPB tasks from QA datasets (gold answer completion)
 BPB_QA_TASKS = [
-    "squad_bpb_5shot",
+    "squad_bpb_5shot",      # LIST labels: ["answer1", "answer2"]
+    "drop_bpb_5shot",       # Nested LIST labels: [["answer"]] - different structure
 ]
 
 # BPB tasks from language modeling
 BPB_LM_TASKS = [
-    "lambada_bpb",
+    "lambada_bpb_0shot",    # LIST labels: ["word"]
 ]
 
 # BPB tasks from math/code generation
 BPB_GENERATION_TASKS = [
-    "minerva_math_500_gold_bpb_0shot",
+    "minerva_math_500_gold_bpb_0shot",  # STRING labels
+]
+
+# BPB tasks with NONE labels (code execution tasks)
+BPB_CODE_TASKS = [
+    "codex_humaneval_gold_bpb_0shot",   # NONE labels - metrics must handle None
 ]
 
 # All generative BPB tasks
-BPB_TASKS = BPB_QA_TASKS + BPB_LM_TASKS + BPB_GENERATION_TASKS
+BPB_TASKS = BPB_QA_TASKS + BPB_LM_TASKS + BPB_GENERATION_TASKS + BPB_CODE_TASKS
 
 # -----------------------------------------------------
 # Expected Metric Configuration
 # -----------------------------------------------------
 
 METRIC_TYPE_BY_TASK = {
-    # MC len_norm tasks
+    # MC len_norm tasks (RC format - multi-token answer text)
     "arc_challenge": "len_norm",
-    # MC acc tasks
-    "medmcqa_rc": "acc",
-    # BPB tasks
+    # MC acc tasks (RC format)
+    "medmcqa_rc_5shot": "acc",
+    # MC format tasks (single-token letter labels)
+    "arc_challenge_mc_5shot": "acc",
+    # BPB tasks - LIST labels
     "squad_bpb_5shot": "bpb",
-    "lambada_bpb": "bpb",
+    "drop_bpb_5shot": "bpb",
+    "lambada_bpb_0shot": "bpb",
+    # BPB tasks - STRING labels
     "minerva_math_500_gold_bpb_0shot": "bpb",
+    # BPB tasks - NONE labels
+    "codex_humaneval_gold_bpb_0shot": "bpb",
 }
 
 # Expected metric keys by metric type
@@ -451,7 +485,7 @@ class TestGenerativeBPBTasks:
 class TestMultipleChoiceAccuracyTasks:
     """Test accuracy metric computation for MC tasks with acc metric type."""
 
-    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS + MC_FORMAT_TASKS)
     def test_correct_answer_logits_produce_full_accuracy(
         self, task_name: str, tokenizer, vocab_size
     ):
@@ -476,7 +510,7 @@ class TestMultipleChoiceAccuracyTasks:
         validate_accuracy_range(acc_v1, task_name, "correct_answer", expected_acc=1.0)
         validate_accuracy_range(acc_v2, task_name, "correct_answer", expected_acc=1.0)
 
-    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS + MC_FORMAT_TASKS)
     def test_random_logits_produce_valid_accuracy(self, task_name: str, tokenizer, vocab_size):
         """Random logits should produce accuracy in valid range [0, 1]."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
@@ -493,7 +527,7 @@ class TestMultipleChoiceAccuracyTasks:
         acc_v1 = results["acc_v1"].item()
         assert 0.0 <= acc_v1 <= 1.0, f"Task {task_name}: accuracy {acc_v1} out of bounds"
 
-    @pytest.mark.parametrize("task_name", MC_ACC_TASKS)
+    @pytest.mark.parametrize("task_name", MC_ACC_TASKS + MC_FORMAT_TASKS)
     def test_acc_task_returns_expected_keys(self, task_name: str, tokenizer, vocab_size):
         """Acc tasks should return all expected metric keys."""
         task = build_task(task_name, tokenizer, model_ctx_len=512)
