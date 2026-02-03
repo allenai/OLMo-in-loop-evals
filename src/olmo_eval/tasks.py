@@ -1621,7 +1621,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 if self.metric_type in ["ce_loss", "bpb"]:
                     if label_id is None:
                         label_id = 0
-                    if label_id != cont_id and not isinstance(label_id, str):
+                    if label_id != cont_id and not isinstance(label_id, (str, list)):
                         # Skip non-target continuations for ce_loss and bpb
                         continue
                     else:
