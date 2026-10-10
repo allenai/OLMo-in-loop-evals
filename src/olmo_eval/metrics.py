@@ -22,9 +22,6 @@ def dist_combine_lists(x: List[T]) -> List[T]:
 
 
 class ICLMetric(Metric):
-    # update method does not require access to global metric state
-    full_state_update: bool = False
-
     def __init__(self, metric_type="acc") -> None:
         """metric_type: f1, acc, len_norm, pmi_dc, ce_loss, bpb"""
         super().__init__(sync_on_compute=True)
@@ -43,6 +40,7 @@ class ICLMetric(Metric):
         self.add_state("bpbs_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists)
 
     def reset(self):
+        super().reset()
         self.loglikelihoods: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.celosses: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.bpbs: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
@@ -384,10 +382,10 @@ class ICLMetric(Metric):
             }
         elif self.metric_type == "ce_loss":
             return {
-                "ce_loss_v1": torch.tensor(
+                "ce_loss_v1": (
                     sum(celoss_no_leading_space) / len(celoss_no_leading_space)
-                ),
-                "ce_loss_v2": torch.tensor(sum(celoss) / len(celoss)),
+                ).detach(),
+                "ce_loss_v2": (sum(celoss) / len(celoss)).detach(),
             }
         elif self.metric_type == "bpb":
             return {

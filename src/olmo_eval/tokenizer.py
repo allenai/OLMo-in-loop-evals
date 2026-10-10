@@ -147,9 +147,10 @@ class HFTokenizer(Tokenizer):
     def encode_batch(
         self, inputs: Sequence[str], add_special_tokens: bool = True
     ) -> List[List[int]]:
-        batch_encoding = self._base_tokenizer.encode_batch(
-            inputs, add_special_tokens=add_special_tokens
+        encode = getattr(
+            self._base_tokenizer, "encode_batch_fast", self._base_tokenizer.encode_batch
         )
+        batch_encoding = encode(inputs, add_special_tokens=add_special_tokens)
         if add_special_tokens:
             return [self._add_special_tokens(encoding.ids) for encoding in batch_encoding]
         else:

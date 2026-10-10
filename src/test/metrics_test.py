@@ -1,0 +1,45 @@
+import pytest
+import torch
+
+from olmo_eval.metrics import ICLMetric
+
+
+@pytest.mark.parametrize("metric_type", ["acc", "f1", "len_norm", "pmi_dc", "ce_loss", "bpb"])
+@pytest.mark.parametrize("fast_mc", [False, True])
+def test_metric_reset_clears_cached_results(metric_type, fast_mc):
+    batch = {
+        "doc_id": torch.tensor([0, 0]),
+        "cont_id": torch.tensor([0, 1]),
+        "continuation": torch.tensor([[1], [2]]),
+        "ctx_len": torch.tensor([1, 1]),
+        "dc_len": torch.tensor([1, 1]),
+        "cont_len": torch.tensor([1, 1]),
+        "cont_str_len": torch.tensor([2, 2]),
+        "cont_byte_len": torch.tensor([2, 2]),
+        "cont_str_len_no_leading_space": torch.tensor([1, 1]),
+        "cont_byte_len_no_leading_space": torch.tensor([1, 1]),
+        "label_id": torch.tensor([0, 0]),
+    }
+    logits = torch.zeros(2, 1, 3)
+    logits[0, 0, 1] = 10
+    if fast_mc:
+        batch = {key: value[:1] for key, value in batch.items()}
+        batch["choice_ids"] = torch.tensor([[1, 2, -1]])
+        logits = logits[:1]
+    metric = ICLMetric(metric_type)
+    metric.update({}, lm_logits=None)
+    metric.update(batch, lm_logits=logits, dc_lm_logits=torch.zeros_like(logits))
+    before_reset = metric.compute()
+    assert all(torch.isfinite(value) for value in before_reset.values())
+
+    metric.reset()
+    assert metric.update_count == 0
+    assert all(not state for state in metric.metric_state.values())
+    logits[0, 0, 1] = -10
+    metric.update(batch, lm_logits=logits, dc_lm_logits=torch.zeros_like(logits))
+    after_reset = metric.compute()
+    assert metric.update_count == 1
+    assert any(not torch.equal(value, after_reset[key]) for key, value in before_reset.items())
+    metric.reset()
+    forwarded = metric(batch, lm_logits=logits, dc_lm_logits=torch.zeros_like(logits))
+    assert all(torch.equal(value, forwarded[key]) for key, value in after_reset.items())
