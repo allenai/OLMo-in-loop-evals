@@ -2869,12 +2869,10 @@ def build_task(
     fixed_ctx_len: bool = False,
 ) -> ICLMultiChoiceTaskDataset:
     if label not in LABEL_TO_TASK_MAP.keys():
-        raise KeyError(
-            f'\
+        raise KeyError(f'\
             Downstream evaluation config "{label}" not found in available configuraitons. \
             Please specify tasks in the available configurations: {LABEL_TO_TASK_MAP}\
-        '
-        )
+        ')
     task_class = LABEL_TO_TASK_MAP[label]
     task_kwargs = {}
     if isinstance(task_class, tuple):
