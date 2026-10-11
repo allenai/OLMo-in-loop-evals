@@ -394,7 +394,9 @@ class ICLMetric(Metric):
             }
         else:
             return {
-                f"{self.metric_type}_v1": torch.tensor(sum(correct) / len(correct)),
+                f"{self.metric_type}_v1": torch.tensor(
+                    sum(correct_no_leading_space) / len(correct_no_leading_space)
+                ),
                 f"{self.metric_type}_v2": torch.tensor(sum(correct) / len(correct)),
                 "ce_loss_v1": torch.tensor(
                     sum(celoss_no_leading_space) / len(celoss_no_leading_space)

@@ -4,6 +4,20 @@ import torch
 from olmo_eval.metrics import ICLMetric
 
 
+@pytest.mark.parametrize("metric_type", ["acc", "len_norm", "pmi_dc"])
+def test_metric_accuracy_versions_use_their_own_predictions(metric_type):
+    metric = ICLMetric(metric_type)
+    metric.update({}, lm_logits=None)
+    metric.labels = [(0, 0, 0)]
+    for name in metric.metric_state:
+        if name != "labels":
+            score = 1.0 if name.endswith("_no_leading_space") else -1.0
+            setattr(metric, name, [(0, 0, 0.0), (0, 1, score)])
+    results = metric.compute()
+    assert results[f"{metric_type}_v1"].item() == 0.0
+    assert results[f"{metric_type}_v2"].item() == 1.0
+
+
 @pytest.mark.parametrize("metric_type", ["acc", "f1", "len_norm", "pmi_dc", "ce_loss", "bpb"])
 @pytest.mark.parametrize("fast_mc", [False, True])
 def test_metric_reset_clears_cached_results(metric_type, fast_mc):
