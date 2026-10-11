@@ -540,6 +540,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
 
     def prep_examples(self):
         """Overwrite for WinoGrande as multiple ctx, single continuation"""
+        self.samples = []
         doc_id = 0
         for doc in self.dataset:
             # here ctx is a list
@@ -591,7 +592,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
                         "cont_id": cont_id,
                         "ctx": ctx,
                         "continuation": continuation,
-                        "ctx_len": len(ctx),
+                        "ctx_len": len(query) - len(continuation) + 1,
                         "dc_len": len(dc),
                         "cont_len": len(
                             continuation
