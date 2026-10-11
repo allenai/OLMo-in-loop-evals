@@ -22,9 +22,6 @@ def dist_combine_lists(x: List[T]) -> List[T]:
 
 
 class ICLMetric(Metric):
-    # update method does not require access to global metric state
-    full_state_update: bool = False
-
     def __init__(self, metric_type="acc") -> None:
         """metric_type: f1, acc, len_norm, pmi_dc, ce_loss, bpb"""
         super().__init__(sync_on_compute=True)
@@ -43,10 +40,11 @@ class ICLMetric(Metric):
         self.add_state("bpbs_no_leading_space", default=[], dist_reduce_fx=dist_combine_lists)
 
     def reset(self):
+        super().reset()
         self.loglikelihoods: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.celosses: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.bpbs: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
-        self.labels: List[Tuple[Optional[int], Optional[int], Optional[int]]] = []
+        self.labels: List[Tuple[Optional[int], ...]] = []
 
         self.loglikelihoods_no_leading_space: List[
             Tuple[Optional[int], Optional[int], Optional[float]]
@@ -126,6 +124,25 @@ class ICLMetric(Metric):
                 log_likelihood_no_leading_space: torch.Tensor
                 celoss_no_leading_space: torch.Tensor
                 bpb_no_leading_space: torch.Tensor
+                if fast_mc and "choice_lengths" in batch:
+                    (
+                        cont_str_len,
+                        cont_byte_len,
+                        cont_str_len_no_leading_space,
+                        cont_byte_len_no_leading_space,
+                    ) = batch["choice_lengths"][idx, choice_idx]
+                else:
+                    cont_str_len = batch["cont_str_len"][idx]
+                    cont_byte_len = batch["cont_byte_len"][idx]
+                    cont_str_len_no_leading_space = batch["cont_str_len_no_leading_space"][idx]
+                    cont_byte_len_no_leading_space = batch["cont_byte_len_no_leading_space"][idx]
+
+                celoss = -cont_log_probs_sum / cont_str_len
+                bpb = -cont_log_probs_sum / cont_byte_len * LOG_2_OF_E
+                celoss_no_leading_space = -cont_log_probs_sum / cont_str_len_no_leading_space
+                bpb_no_leading_space = (
+                    -cont_log_probs_sum / cont_byte_len_no_leading_space * LOG_2_OF_E
+                )
                 if self.metric_type == "pmi_dc":
                     assert dc_lm_logits is not None
                     # get domain conditional continuation logits: [cont_len, vocab]
@@ -137,49 +154,23 @@ class ICLMetric(Metric):
                         dc_lm_cont_logits, _cont_tokens, reduction="sum"
                     )
 
-                    # gather log-probs at continuation token indices but divide by domain conditional prob
-                    log_likelihood = cont_log_probs_sum / dc_cont_log_probs_sum
-                    celoss = -log_likelihood
-                    bpb = -log_likelihood  # the normalization factors cancel out
-
+                    # PMI is log P(answer | context) - log P(answer | domain).
+                    log_likelihood = cont_log_probs_sum - dc_cont_log_probs_sum
                     log_likelihood_no_leading_space = log_likelihood
-                    celoss_no_leading_space = celoss
-                    bpb_no_leading_space = bpb
                 elif self.metric_type == "acc" or self.metric_type == "f1":
                     # gather log-probs at continuation token indices
                     log_likelihood = cont_log_probs_sum
-                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
-                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
-
                     log_likelihood_no_leading_space = cont_log_probs_sum
-                    celoss_no_leading_space = (
-                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    bpb_no_leading_space = (
-                        -cont_log_probs_sum
-                        / batch["cont_byte_len_no_leading_space"][idx]
-                        * LOG_2_OF_E
-                    )
                 elif self.metric_type in ["len_norm", "ce_loss", "bpb"]:
-                    log_likelihood = cont_log_probs_sum / batch["cont_str_len"][idx]
-                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
-                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
-
+                    log_likelihood = cont_log_probs_sum / cont_str_len
                     log_likelihood_no_leading_space = (
-                        cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    celoss_no_leading_space = (
-                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    bpb_no_leading_space = (
-                        -cont_log_probs_sum
-                        / batch["cont_byte_len_no_leading_space"][idx]
-                        * LOG_2_OF_E
+                        cont_log_probs_sum / cont_str_len_no_leading_space
                     )
                 else:
                     raise ValueError(self.metric_type)
 
-                self.labels.append((doc_id, _cont_id, int(batch["label_id"][idx])))
+                num_choices = int(batch["num_choices"][idx]) if "num_choices" in batch else None
+                self.labels.append((doc_id, _cont_id, int(batch["label_id"][idx]), num_choices))
                 self.loglikelihoods.append((doc_id, _cont_id, float(log_likelihood)))
                 self.celosses.append((doc_id, _cont_id, float(celoss)))
                 self.bpbs.append((doc_id, _cont_id, float(bpb)))
@@ -200,18 +191,22 @@ class ICLMetric(Metric):
         loglikelihood_dict: Dict[int, Dict[int, float]] = {}
         loglikelihood_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
         label_dict: Dict[int, int] = {}
+        expected_choices: Dict[int, int] = {}
         celoss_dict: Dict[int, Dict[int, float]] = {}
         celoss_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
         bpb_dict: Dict[int, Dict[int, float]] = {}
         bpb_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
 
         # collect labels
-        for doc_id, cont_id, label_id in self.labels:
+        for entry in self.labels:
+            doc_id, cont_id, label_id = entry[:3]
             if doc_id is None or cont_id is None or label_id is None:
                 continue
 
             if doc_id not in label_dict:
                 label_dict[doc_id] = label_id
+            if len(entry) > 3 and entry[3] is not None:
+                expected_choices[doc_id] = entry[3]
 
         # collect loglikelihoods
         for doc_id, cont_id, loglikelihood in self.loglikelihoods:
@@ -301,6 +296,10 @@ class ICLMetric(Metric):
         for doc_id in loglikelihood_dict:
             # each doc_id might have a different number of continuation
             num_continuations = len(loglikelihood_dict[doc_id].keys())
+            if num_continuations != expected_choices.get(doc_id, num_continuations):
+                continue
+            if not 0 <= label_dict[doc_id] < num_continuations:
+                continue
             loglikelihoods = torch.tensor([-float("inf")] * num_continuations)
             loglikelihoods_no_leading_space = torch.tensor([-float("inf")] * num_continuations)
             celosses = torch.tensor([float("inf")] * num_continuations)
@@ -368,6 +367,18 @@ class ICLMetric(Metric):
                     ].item()
                 )
 
+        if not (correct or celoss or bpb or preds):
+            names = (
+                [self.metric_type]
+                if self.metric_type in ["f1", "ce_loss", "bpb"]
+                else [self.metric_type, "ce_loss", "bpb", "soft", "soft_log"]
+            )
+            return {
+                f"{name}_v{version}": torch.tensor(float("nan"))
+                for name in names
+                for version in [1, 2]
+            }
+
         # v1 vs. v2 corresponds to whether we add a 1 to the num chars or num bytes when normalizing the answer length. See https://github.com/allenai/OLMo-in-loop-evals/pull/6
 
         if self.metric_type == "f1":
@@ -384,10 +395,10 @@ class ICLMetric(Metric):
             }
         elif self.metric_type == "ce_loss":
             return {
-                "ce_loss_v1": torch.tensor(
+                "ce_loss_v1": (
                     sum(celoss_no_leading_space) / len(celoss_no_leading_space)
-                ),
-                "ce_loss_v2": torch.tensor(sum(celoss) / len(celoss)),
+                ).detach(),
+                "ce_loss_v2": (sum(celoss) / len(celoss)).detach(),
             }
         elif self.metric_type == "bpb":
             return {
@@ -396,7 +407,9 @@ class ICLMetric(Metric):
             }
         else:
             return {
-                f"{self.metric_type}_v1": torch.tensor(sum(correct) / len(correct)),
+                f"{self.metric_type}_v1": torch.tensor(
+                    sum(correct_no_leading_space) / len(correct_no_leading_space)
+                ),
                 f"{self.metric_type}_v2": torch.tensor(sum(correct) / len(correct)),
                 "ce_loss_v1": torch.tensor(
                     sum(celoss_no_leading_space) / len(celoss_no_leading_space)

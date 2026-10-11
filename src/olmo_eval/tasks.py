@@ -20,6 +20,13 @@ METRIC_FROM_OE_EVAL = {
     "logits_per_byte": "bpb",
 }
 
+_CONT_LENGTH_FIELDS = (
+    "cont_str_len",
+    "cont_byte_len",
+    "cont_str_len_no_leading_space",
+    "cont_byte_len_no_leading_space",
+)
+
 
 class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     """Only supports zero-shot for now."""
@@ -78,7 +85,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     def prep_examples(self):
         """Append doc_ids to each example so that they are processed together in the metric"""
         doc_id = 0
-        new_samples = []
+        new_samples: List[Dict[str, Any]] = []
         for doc in self.dataset:
             for prompt in self.prompts:
                 self.current_prompt = prompt
@@ -93,14 +100,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 continuations = self.doc_to_continuations(doc)
                 label_id = self.doc_to_label(doc)
                 doc_text = self.doc_to_text(doc)
-                ctx = self.token_encode(doc_text)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(doc_text)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
@@ -143,6 +143,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                         {
                             "doc_id": doc_id,
                             "cont_id": cont_id,
+                            "num_choices": len(continuations),
                             "ctx": ctx,
                             "continuation": continuation,
                             "ctx_len": actual_ctx_len,
@@ -165,19 +166,14 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         # Fast MCQA:
         # Only pass a single request, and group together all continuations as tokens
         if self.fast_mc:
-            # Get unique doc IDs
-            unique_doc_ids = {
-                sample["doc_id"] for sample in new_samples if isinstance(sample["doc_id"], int)
-            }
+            samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
+            for sample in new_samples:
+                samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
 
             # Create new samples list for fast MC
             fast_mc_samples = []
 
-            # Process each unique document
-            for doc_id in unique_doc_ids:
-                # Get all samples for this doc_id
-                doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
-
+            for doc_samples in samples_by_doc.values():
                 # Sort by continuation ID
                 doc_samples.sort(
                     key=lambda x: (
@@ -203,6 +199,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 ]
 
                 base_sample["choices"] = choices
+                base_sample["choice_lengths"] = [
+                    [sample[field] for field in _CONT_LENGTH_FIELDS] for sample in doc_samples
+                ]
                 base_sample["fast_mc"] = True
 
                 fast_mc_samples.append(base_sample)
@@ -348,6 +347,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             "label_id": torch.LongTensor(label_ids),
         }
 
+        if all("num_choices" in sample for sample in data):
+            batch["num_choices"] = torch.LongTensor([sample["num_choices"] for sample in data])
+
         if self.fast_mc:
             # Pad choice_ids with -1 (for Qs with different numbers of choices)
             max_choices_len = max(len(choices) for choices in choice_ids)
@@ -357,11 +359,28 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 padded_choice_ids.append(choices + padding)
             choice_ids = padded_choice_ids
             batch["choice_ids"] = torch.LongTensor(choice_ids)
+            batch["choice_lengths"] = torch.LongTensor(
+                [
+                    sample.get(
+                        "choice_lengths",
+                        [[sample[field] for field in _CONT_LENGTH_FIELDS]] * len(sample["choices"]),
+                    )
+                    + [[1] * len(_CONT_LENGTH_FIELDS)] * (max_choices_len - len(sample["choices"]))
+                    for sample in data
+                ]
+            )
 
         return batch
 
     def token_encode(self, string: str) -> List[int]:
         return self.tokenizer.encode(string, add_special_tokens=False)
+
+    def _encode_context(self, string: str) -> List[int]:
+        tokens = self.token_encode(string)
+        bos = self.tokenizer.bos_token_id
+        if bos is not None and (not tokens or tokens[0] != bos):
+            tokens = [bos] + tokens
+        return tokens or [self.tokenizer.eos_token_id]
 
     def token_decode(self, tokens: List[int]) -> str:
         return self.tokenizer.decode(tokens)
@@ -540,6 +559,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
 
     def prep_examples(self):
         """Overwrite for WinoGrande as multiple ctx, single continuation"""
+        self.samples = []
         doc_id = 0
         for doc in self.dataset:
             # here ctx is a list
@@ -562,14 +582,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
             continuation = self.token_encode(continuation_str)
 
             for cont_id, (ctx, dc) in enumerate(zip(ctxs, dcs)):
-                ctx = self.token_encode(ctx)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(ctx)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
@@ -589,9 +602,10 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
                     {
                         "doc_id": doc_id,
                         "cont_id": cont_id,
+                        "num_choices": len(ctxs),
                         "ctx": ctx,
                         "continuation": continuation,
-                        "ctx_len": len(ctx),
+                        "ctx_len": len(query) - len(continuation) + 1,
                         "dc_len": len(dc),
                         "cont_len": len(
                             continuation
@@ -854,7 +868,7 @@ class ArcEasyCELoss(ArcEasy):
 
     def doc_to_continuations(self, doc):
         # We only consider the correct answer for this metric
-        answer = doc["choices"]["text"][self.doc_to_label(doc)]
+        answer = doc["choices"]["text"][super().doc_to_label(doc)]
         return [" " + answer]
 
     def doc_to_label(self, doc):
@@ -1562,9 +1576,10 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
             config, requests = load_oe_eval_requests(self.dataset_path, ds_name, split)
             requests_list.append(requests)
             configs.append(config)
-        if metric_type is not None:
-            self.metric_type = metric_type
-        else:
+        resolved_metric = (
+            metric_type if metric_type is not None else getattr(self, "metric_type", None)
+        )
+        if metric_type is None:
             # Use metric type from associated task config
             for config in configs:
                 if config is not None:
@@ -1572,11 +1587,14 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     if metric_type_raw is not None:
                         # acc, len_norm, pmi_dc
                         metric_type = METRIC_FROM_OE_EVAL[metric_type_raw]
-                        if self.metric_type is not None and self.metric_type != metric_type:
+                        if resolved_metric is not None and resolved_metric != metric_type:
                             raise ValueError(
-                                f"Conflicting metric types: {self.metric_type} and {metric_type}"
+                                f"Conflicting metric types: {resolved_metric} and {metric_type}"
                             )
-                        self.metric_type = metric_type
+                        resolved_metric = metric_type
+        if resolved_metric is None:
+            raise ValueError("No metric type found in task configs; pass metric_type explicitly")
+        self.metric_type = resolved_metric
         self.dataset = requests_list
 
         # prep examples
@@ -1585,11 +1603,12 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         self._max_sequence_length: Optional[int] = None
 
     def prep_examples(self):
+        self.samples = []
         current_doc_id_offset = 0
-        max_doc_id = 0
+        max_doc_id = -1
         for requests in self.dataset:
-            current_doc_id_offset += max_doc_id
-            max_doc_id = 0  # Max doc id seen in this dataset
+            current_doc_id_offset += max_doc_id + 1
+            max_doc_id = -1  # Max doc id seen in this dataset
 
             new_samples = []
             for request in requests:
@@ -1629,14 +1648,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         cont_id = 0
                         label_id = 0
                 doc_text = request_dict["context"]
-                ctx = self.token_encode(doc_text)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(doc_text)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
@@ -1695,20 +1707,21 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     }
                 )
 
+            samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
+            for sample in new_samples:
+                samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
+            for doc_samples in samples_by_doc.values():
+                num_choices = max(sample["cont_id"] for sample in doc_samples) + 1
+                for sample in doc_samples:
+                    sample["num_choices"] = num_choices
+
             # Fast MCQA:
             # Only pass a single request, and group together all continuations as tokens
             if self.fast_mc:
-                # Get unique doc IDs
-                unique_doc_ids = set(sample["doc_id"] for sample in new_samples)
-
                 # Create new samples list for fast MC
                 fast_mc_samples = []
 
-                # Process each unique document
-                for doc_id in unique_doc_ids:
-                    # Get all samples for this doc_id
-                    doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
-
+                for doc_samples in samples_by_doc.values():
                     # Sort by continuation ID
                     doc_samples.sort(key=lambda x: x["cont_id"])
 
@@ -1726,6 +1739,9 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     choices = [choice[0] for choice in choices]
 
                     base_sample["choices"] = choices
+                    base_sample["choice_lengths"] = [
+                        [sample[field] for field in _CONT_LENGTH_FIELDS] for sample in doc_samples
+                    ]
                     base_sample["fast_mc"] = True
 
                     fast_mc_samples.append(base_sample)
@@ -1733,7 +1749,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 # Add fast MC samples to main samples list
                 new_samples = fast_mc_samples
 
-            self.samples = new_samples
+            self.samples.extend(new_samples)
 
     def doc_to_text(self, doc) -> str:
         del doc
@@ -2869,12 +2885,10 @@ def build_task(
     fixed_ctx_len: bool = False,
 ) -> ICLMultiChoiceTaskDataset:
     if label not in LABEL_TO_TASK_MAP.keys():
-        raise KeyError(
-            f'\
+        raise KeyError(f'\
             Downstream evaluation config "{label}" not found in available configuraitons. \
             Please specify tasks in the available configurations: {LABEL_TO_TASK_MAP}\
-        '
-        )
+        ')
     task_class = LABEL_TO_TASK_MAP[label]
     task_kwargs = {}
     if isinstance(task_class, tuple):
