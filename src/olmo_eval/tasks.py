@@ -78,7 +78,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     def prep_examples(self):
         """Append doc_ids to each example so that they are processed together in the metric"""
         doc_id = 0
-        new_samples = []
+        new_samples: List[Dict[str, Any]] = []
         for doc in self.dataset:
             for prompt in self.prompts:
                 self.current_prompt = prompt
@@ -165,19 +165,14 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
         # Fast MCQA:
         # Only pass a single request, and group together all continuations as tokens
         if self.fast_mc:
-            # Get unique doc IDs
-            unique_doc_ids = {
-                sample["doc_id"] for sample in new_samples if isinstance(sample["doc_id"], int)
-            }
+            samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
+            for sample in new_samples:
+                samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
 
             # Create new samples list for fast MC
             fast_mc_samples = []
 
-            # Process each unique document
-            for doc_id in unique_doc_ids:
-                # Get all samples for this doc_id
-                doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
-
+            for doc_samples in samples_by_doc.values():
                 # Sort by continuation ID
                 doc_samples.sort(
                     key=lambda x: (
@@ -1701,17 +1696,14 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
             # Fast MCQA:
             # Only pass a single request, and group together all continuations as tokens
             if self.fast_mc:
-                # Get unique doc IDs
-                unique_doc_ids = set(sample["doc_id"] for sample in new_samples)
+                samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
+                for sample in new_samples:
+                    samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
 
                 # Create new samples list for fast MC
                 fast_mc_samples = []
 
-                # Process each unique document
-                for doc_id in unique_doc_ids:
-                    # Get all samples for this doc_id
-                    doc_samples = [s for s in new_samples if s["doc_id"] == doc_id]
-
+                for doc_samples in samples_by_doc.values():
                     # Sort by continuation ID
                     doc_samples.sort(key=lambda x: x["cont_id"])
 

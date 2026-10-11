@@ -106,4 +106,9 @@ def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric)
             [0, 2, 3, 5] if fast_mc else [0, 0, 2, 2, 3, 3, 5, 5]
         )
         assert task.collate_fn([task[0], task[-1]])["doc_id"].tolist() == [0, 5]
+        if fast_mc:
+            assert all(
+                sample["choices"] == [task.token_encode(text)[0] for text in [" A", " B"]]
+                for sample in task.samples
+            )
         task.prep_examples()
