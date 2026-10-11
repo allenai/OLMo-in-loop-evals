@@ -93,14 +93,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 continuations = self.doc_to_continuations(doc)
                 label_id = self.doc_to_label(doc)
                 doc_text = self.doc_to_text(doc)
-                ctx = self.token_encode(doc_text)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(doc_text)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
@@ -358,6 +351,13 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     def token_encode(self, string: str) -> List[int]:
         return self.tokenizer.encode(string, add_special_tokens=False)
 
+    def _encode_context(self, string: str) -> List[int]:
+        tokens = self.token_encode(string)
+        bos = self.tokenizer.bos_token_id
+        if bos is not None and (not tokens or tokens[0] != bos):
+            tokens = [bos] + tokens
+        return tokens or [self.tokenizer.eos_token_id]
+
     def token_decode(self, tokens: List[int]) -> str:
         return self.tokenizer.decode(tokens)
 
@@ -558,14 +558,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
             continuation = self.token_encode(continuation_str)
 
             for cont_id, (ctx, dc) in enumerate(zip(ctxs, dcs)):
-                ctx = self.token_encode(ctx)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(ctx)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")
@@ -1630,14 +1623,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                         cont_id = 0
                         label_id = 0
                 doc_text = request_dict["context"]
-                ctx = self.token_encode(doc_text)
-
-                # Add BOS token if it is exists in the tokenizer
-                if (
-                    self.tokenizer.bos_token_id is not None
-                    and ctx[0] != self.tokenizer.bos_token_id
-                ):
-                    ctx = [self.tokenizer.bos_token_id] + ctx
+                ctx = self._encode_context(doc_text)
 
                 if doc_id == 0:
                     log.info(f"First tokens of in-loop eval context: {ctx[:5]}")

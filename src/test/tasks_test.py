@@ -4,6 +4,7 @@ from datasets import Dataset
 
 from olmo_eval.metrics import ICLMetric
 from olmo_eval.tasks import (
+    ArcEasy,
     ArcEasyCELoss,
     OEEvalTask,
     WinoGrande,
@@ -11,6 +12,47 @@ from olmo_eval.tasks import (
     list_tasks,
 )
 from olmo_eval.tokenizer import HFTokenizer
+
+
+@pytest.mark.parametrize("source", ["hf", "oe", "wino"])
+@pytest.mark.parametrize("bos_token_id", [None, 7])
+def test_empty_context_uses_a_prefix_token(monkeypatch, source, bos_token_id):
+    class EmptyContextTask(ArcEasy):
+        def doc_to_text(self, doc):
+            return ""
+
+    doc = {
+        "question": "Q",
+        "choices": {"text": ["cat"]},
+        "answerKey": "A",
+        "sentence": "_ cat",
+        "option1": "",
+        "option2": "",
+        "answer": "1",
+    }
+    request = {
+        "doc": doc,
+        "doc_id": 0,
+        "idx": 0,
+        "label": 0,
+        "request_type": "loglikelihood",
+        "request": {"context": "", "continuation": " cat"},
+    }
+    monkeypatch.setattr("olmo_eval.tasks.load_hf_dataset", lambda *args: Dataset.from_list([doc]))
+    monkeypatch.setattr("olmo_eval.tasks.load_oe_eval_requests", lambda *args: (None, [request]))
+    tokenizer = HFTokenizer(
+        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
+        pad_token_id=0,
+        eos_token_id=0,
+        bos_token_id=bos_token_id,
+    )
+    task_class = {"hf": EmptyContextTask, "oe": OEEvalTask, "wino": WinoGrande}[source]
+    task = task_class(tokenizer, "test", metric_type="acc")
+    assert all(sample["ctx"] == [7 if bos_token_id is not None else 0] for sample in task.samples)
+    batch = task.collate_fn(task.samples)
+    metric = ICLMetric("acc")
+    metric.update(batch, lm_logits=torch.zeros(*batch["input_ids"].shape, tokenizer.vocab_size))
+    assert all(torch.isfinite(value) for value in metric.compute().values())
 
 
 @pytest.mark.parametrize("answer_key", ["B", "2"])
