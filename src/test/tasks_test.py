@@ -1,7 +1,15 @@
 import pytest
 
-from olmo_eval.tasks import OEEvalTask, build_task, list_tasks
+from olmo_eval.tasks import ArcEasyCELoss, OEEvalTask, build_task, list_tasks
 from olmo_eval.tokenizer import HFTokenizer
+
+
+@pytest.mark.parametrize("answer_key", ["B", "2"])
+def test_arc_loss_scores_the_gold_answer(answer_key):
+    task = ArcEasyCELoss.__new__(ArcEasyCELoss)
+    doc = {"choices": {"text": ["wrong", "correct"]}, "answerKey": answer_key}
+    assert task.doc_to_continuations(doc) == [" correct"]
+    assert task.doc_to_label(doc) == 0
 
 
 @pytest.mark.parametrize("label", list_tasks())

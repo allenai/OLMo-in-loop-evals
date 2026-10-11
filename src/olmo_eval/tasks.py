@@ -854,7 +854,7 @@ class ArcEasyCELoss(ArcEasy):
 
     def doc_to_continuations(self, doc):
         # We only consider the correct answer for this metric
-        answer = doc["choices"]["text"][self.doc_to_label(doc)]
+        answer = doc["choices"]["text"][super().doc_to_label(doc)]
         return [" " + answer]
 
     def doc_to_label(self, doc):
