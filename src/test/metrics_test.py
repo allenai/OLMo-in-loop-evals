@@ -4,6 +4,39 @@ import torch
 from olmo_eval.metrics import ICLMetric
 
 
+@pytest.mark.parametrize("fast_mc", [False, True])
+def test_pmi_uses_log_probability_difference_and_raw_losses(fast_mc):
+    batch = {
+        key: torch.tensor([value, value])
+        for key, value in {
+            "doc_id": 0,
+            "label_id": 0,
+            "ctx_len": 1,
+            "dc_len": 1,
+            "cont_len": 1,
+            "cont_str_len": 2,
+            "cont_byte_len": 2,
+            "cont_str_len_no_leading_space": 1,
+            "cont_byte_len_no_leading_space": 1,
+        }.items()
+    }
+    batch["cont_id"] = torch.tensor([0, 1])
+    batch["continuation"] = torch.tensor([[1], [2]])
+    logits = torch.tensor([[[0.2, 0.6, 0.2]]] * 2).log()
+    dc_logits = torch.tensor([[[0.89, 0.01, 0.1]]] * 2).log()
+    if fast_mc:
+        batch = {key: value[:1] for key, value in batch.items()}
+        batch["choice_ids"] = torch.tensor([[1, 2, -1]])
+        logits, dc_logits = logits[:1], dc_logits[:1]
+    metric = ICLMetric("pmi_dc")
+    metric.update(batch, lm_logits=logits, dc_lm_logits=dc_logits)
+    results = metric.compute()
+    assert results["pmi_dc_v1"].item() == results["pmi_dc_v2"].item() == 1.0
+    assert results["ce_loss_v1"].item() == pytest.approx(-torch.tensor(0.6).log().item())
+    assert results["ce_loss_v2"].item() == pytest.approx(results["ce_loss_v1"].item() / 2)
+    assert results["bpb_v2"].item() == pytest.approx(-torch.tensor(0.6).log2().item() / 2)
+
+
 @pytest.mark.parametrize("metric_type", ["acc", "len_norm", "pmi_dc"])
 def test_metric_accuracy_versions_use_their_own_predictions(metric_type):
     metric = ICLMetric(metric_type)

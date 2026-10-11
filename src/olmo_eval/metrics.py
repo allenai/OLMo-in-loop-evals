@@ -135,14 +135,20 @@ class ICLMetric(Metric):
                         dc_lm_cont_logits, _cont_tokens, reduction="sum"
                     )
 
-                    # gather log-probs at continuation token indices but divide by domain conditional prob
-                    log_likelihood = cont_log_probs_sum / dc_cont_log_probs_sum
-                    celoss = -log_likelihood
-                    bpb = -log_likelihood  # the normalization factors cancel out
+                    # PMI is log P(answer | context) - log P(answer | domain).
+                    log_likelihood = cont_log_probs_sum - dc_cont_log_probs_sum
+                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
+                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
 
                     log_likelihood_no_leading_space = log_likelihood
-                    celoss_no_leading_space = celoss
-                    bpb_no_leading_space = bpb
+                    celoss_no_leading_space = (
+                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
+                    )
+                    bpb_no_leading_space = (
+                        -cont_log_probs_sum
+                        / batch["cont_byte_len_no_leading_space"][idx]
+                        * LOG_2_OF_E
+                    )
                 elif self.metric_type == "acc" or self.metric_type == "f1":
                     # gather log-probs at continuation token indices
                     log_likelihood = cont_log_probs_sum
