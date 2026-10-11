@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 import torch
 from datasets import Dataset
@@ -12,6 +14,55 @@ from olmo_eval.tasks import (
     list_tasks,
 )
 from olmo_eval.tokenizer import HFTokenizer
+
+
+@pytest.fixture(scope="module")
+def tokenizer():
+    return HFTokenizer(
+        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
+        pad_token_id=0,
+        eos_token_id=0,
+    )
+
+
+@pytest.mark.parametrize("task_class", [ArcEasy, OEEvalTask])
+@pytest.mark.parametrize("metric_type", ["acc", "len_norm", "pmi_dc"])
+def test_fast_choices_match_ordinary_scoring(monkeypatch, tokenizer, task_class, metric_type):
+    docs: list[dict[str, Any]] = [
+        {"question": "Q", "choices": {"text": ["cat", "café"]}, "answerKey": "B"},
+        {"question": "Q", "choices": {"text": ["cat"]}, "answerKey": "A"},
+    ]
+    requests = [
+        {
+            "doc": doc,
+            "doc_id": doc_id,
+            "idx": choice,
+            "label": 1 if doc_id == 0 else 0,
+            "request_type": "loglikelihood",
+            "request": {"context": "Question: Q\nAnswer:", "continuation": " " + text},
+        }
+        for doc_id, doc in enumerate(docs)
+        for choice, text in enumerate(doc["choices"]["text"])
+    ]
+    monkeypatch.setattr("olmo_eval.tasks.load_hf_dataset", lambda *args: Dataset.from_list(docs))
+    monkeypatch.setattr("olmo_eval.tasks.load_oe_eval_requests", lambda *args: (None, requests))
+    results = []
+    for fast_mc in [False, True]:
+        task = task_class(tokenizer, "test", fast_mc=fast_mc, metric_type=metric_type)
+        batch = task.collate_fn(task.samples)
+        assert batch["cont_str_len"].ndim == 1
+        assert all(isinstance(value, torch.Tensor) for value in batch.values())
+        logits = torch.full((*batch["input_ids"].shape, tokenizer.vocab_size), -1e8)
+        cat, cafe = [task.token_encode(text)[0] for text in [" cat", " café"]]
+        logits[:, :, cat] = torch.tensor(0.52).log()
+        logits[:, :, cafe] = torch.tensor(0.48).log()
+        dc_logits = torch.full((*batch["dc_input_ids"].shape, tokenizer.vocab_size), -1e8)
+        dc_logits[:, :, [cat, cafe]] = torch.tensor(0.5).log()
+        metric = ICLMetric(metric_type)
+        metric.update(batch, lm_logits=logits, dc_lm_logits=dc_logits)
+        results.append(metric.compute())
+    assert results[0].keys() == results[1].keys()
+    assert all(torch.allclose(value, results[1][key]) for key, value in results[0].items())
 
 
 @pytest.mark.parametrize("source", ["hf", "oe", "wino"])
@@ -63,7 +114,7 @@ def test_arc_loss_scores_the_gold_answer(answer_key):
     assert task.doc_to_label(doc) == 0
 
 
-def test_winogrande_scores_truncated_contexts_and_repeats_preparation(monkeypatch):
+def test_winogrande_scores_truncated_contexts_and_repeats_preparation(monkeypatch, tokenizer):
     doc = {
         "sentence": "A " * 32 + "_ said so.",
         "option1": "Alice",
@@ -71,11 +122,6 @@ def test_winogrande_scores_truncated_contexts_and_repeats_preparation(monkeypatc
         "answer": "1",
     }
     monkeypatch.setattr("olmo_eval.tasks.load_hf_dataset", lambda *args: Dataset.from_list([doc]))
-    tokenizer = HFTokenizer(
-        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
-        pad_token_id=0,
-        eos_token_id=0,
-    )
     task = WinoGrande(tokenizer, model_ctx_len=8)
     for _ in range(2):
         assert len(task) == 2
@@ -89,12 +135,7 @@ def test_winogrande_scores_truncated_contexts_and_repeats_preparation(monkeypatc
 
 
 @pytest.mark.parametrize("label", list_tasks())
-def test_build_task(label: str):
-    tokenizer = HFTokenizer(
-        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
-        pad_token_id=0,
-        eos_token_id=0,
-    )
+def test_build_task(label: str, tokenizer):
     task = build_task(label, tokenizer)
     assert len(task) >= 2
     assert task.max_sequence_length > 0
@@ -106,7 +147,7 @@ def test_build_task(label: str):
 
 @pytest.mark.parametrize("fast_mc", [False, True])
 @pytest.mark.parametrize("infer_metric", [False, True])
-def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric):
+def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric, tokenizer):
     requests = [
         {
             "doc": {},
@@ -125,11 +166,6 @@ def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric)
             {"task_config": {"primary_metric": "acc_raw"}},
             [] if name == "empty" else requests,
         ),
-    )
-    tokenizer = HFTokenizer(
-        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
-        pad_token_id=0,
-        eos_token_id=0,
     )
     task = OEEvalTask(
         tokenizer,

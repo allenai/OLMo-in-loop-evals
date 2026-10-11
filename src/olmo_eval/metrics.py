@@ -124,6 +124,25 @@ class ICLMetric(Metric):
                 log_likelihood_no_leading_space: torch.Tensor
                 celoss_no_leading_space: torch.Tensor
                 bpb_no_leading_space: torch.Tensor
+                if fast_mc and "choice_lengths" in batch:
+                    (
+                        cont_str_len,
+                        cont_byte_len,
+                        cont_str_len_no_leading_space,
+                        cont_byte_len_no_leading_space,
+                    ) = batch["choice_lengths"][idx, choice_idx]
+                else:
+                    cont_str_len = batch["cont_str_len"][idx]
+                    cont_byte_len = batch["cont_byte_len"][idx]
+                    cont_str_len_no_leading_space = batch["cont_str_len_no_leading_space"][idx]
+                    cont_byte_len_no_leading_space = batch["cont_byte_len_no_leading_space"][idx]
+
+                celoss = -cont_log_probs_sum / cont_str_len
+                bpb = -cont_log_probs_sum / cont_byte_len * LOG_2_OF_E
+                celoss_no_leading_space = -cont_log_probs_sum / cont_str_len_no_leading_space
+                bpb_no_leading_space = (
+                    -cont_log_probs_sum / cont_byte_len_no_leading_space * LOG_2_OF_E
+                )
                 if self.metric_type == "pmi_dc":
                     assert dc_lm_logits is not None
                     # get domain conditional continuation logits: [cont_len, vocab]
@@ -137,48 +156,15 @@ class ICLMetric(Metric):
 
                     # PMI is log P(answer | context) - log P(answer | domain).
                     log_likelihood = cont_log_probs_sum - dc_cont_log_probs_sum
-                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
-                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
-
                     log_likelihood_no_leading_space = log_likelihood
-                    celoss_no_leading_space = (
-                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    bpb_no_leading_space = (
-                        -cont_log_probs_sum
-                        / batch["cont_byte_len_no_leading_space"][idx]
-                        * LOG_2_OF_E
-                    )
                 elif self.metric_type == "acc" or self.metric_type == "f1":
                     # gather log-probs at continuation token indices
                     log_likelihood = cont_log_probs_sum
-                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
-                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
-
                     log_likelihood_no_leading_space = cont_log_probs_sum
-                    celoss_no_leading_space = (
-                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    bpb_no_leading_space = (
-                        -cont_log_probs_sum
-                        / batch["cont_byte_len_no_leading_space"][idx]
-                        * LOG_2_OF_E
-                    )
                 elif self.metric_type in ["len_norm", "ce_loss", "bpb"]:
-                    log_likelihood = cont_log_probs_sum / batch["cont_str_len"][idx]
-                    celoss = -cont_log_probs_sum / batch["cont_str_len"][idx]
-                    bpb = -cont_log_probs_sum / batch["cont_byte_len"][idx] * LOG_2_OF_E
-
+                    log_likelihood = cont_log_probs_sum / cont_str_len
                     log_likelihood_no_leading_space = (
-                        cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    celoss_no_leading_space = (
-                        -cont_log_probs_sum / batch["cont_str_len_no_leading_space"][idx]
-                    )
-                    bpb_no_leading_space = (
-                        -cont_log_probs_sum
-                        / batch["cont_byte_len_no_leading_space"][idx]
-                        * LOG_2_OF_E
+                        cont_log_probs_sum / cont_str_len_no_leading_space
                     )
                 else:
                     raise ValueError(self.metric_type)

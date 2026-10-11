@@ -20,6 +20,13 @@ METRIC_FROM_OE_EVAL = {
     "logits_per_byte": "bpb",
 }
 
+_CONT_LENGTH_FIELDS = (
+    "cont_str_len",
+    "cont_byte_len",
+    "cont_str_len_no_leading_space",
+    "cont_byte_len_no_leading_space",
+)
+
 
 class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
     """Only supports zero-shot for now."""
@@ -191,6 +198,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 ]
 
                 base_sample["choices"] = choices
+                base_sample["choice_lengths"] = [
+                    [sample[field] for field in _CONT_LENGTH_FIELDS] for sample in doc_samples
+                ]
                 base_sample["fast_mc"] = True
 
                 fast_mc_samples.append(base_sample)
@@ -345,6 +355,16 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                 padded_choice_ids.append(choices + padding)
             choice_ids = padded_choice_ids
             batch["choice_ids"] = torch.LongTensor(choice_ids)
+            batch["choice_lengths"] = torch.LongTensor(
+                [
+                    sample.get(
+                        "choice_lengths",
+                        [[sample[field] for field in _CONT_LENGTH_FIELDS]] * len(sample["choices"]),
+                    )
+                    + [[1] * len(_CONT_LENGTH_FIELDS)] * (max_choices_len - len(sample["choices"]))
+                    for sample in data
+                ]
+            )
 
         return batch
 
@@ -1710,6 +1730,9 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     choices = [choice[0] for choice in choices]
 
                     base_sample["choices"] = choices
+                    base_sample["choice_lengths"] = [
+                        [sample[field] for field in _CONT_LENGTH_FIELDS] for sample in doc_samples
+                    ]
                     base_sample["fast_mc"] = True
 
                     fast_mc_samples.append(base_sample)
