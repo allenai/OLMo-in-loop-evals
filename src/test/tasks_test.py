@@ -101,6 +101,12 @@ def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric)
         monkeypatch.setattr("olmo_eval.tasks.load_oe_eval_requests", lambda *args: (None, []))
         with pytest.raises(ValueError, match="pass metric_type explicitly"):
             OEEvalTask(tokenizer, "test")
+
+        class DefaultMetricTask(OEEvalTask):
+            metric_type = "acc"
+
+        assert DefaultMetricTask(tokenizer, "test").metric_type == "acc"
+        assert DefaultMetricTask(tokenizer, "test", metric_type="bpb").metric_type == "bpb"
     for _ in range(2):
         assert sorted(task[index]["doc_id"] for index in range(len(task))) == (
             [0, 2, 3, 5] if fast_mc else [0, 0, 2, 2, 3, 3, 5, 5]
