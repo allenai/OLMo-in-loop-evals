@@ -1,6 +1,6 @@
 import pytest
 
-from olmo_eval.tasks import build_task, list_tasks
+from olmo_eval.tasks import OEEvalTask, build_task, list_tasks
 from olmo_eval.tokenizer import HFTokenizer
 
 
@@ -18,3 +18,41 @@ def test_build_task(label: str):
     batch = task.collate_fn([instance1, instance2])
     assert isinstance(batch, dict)
     assert "input_ids" in batch
+
+
+@pytest.mark.parametrize("fast_mc", [False, True])
+def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc):
+    requests = [
+        {
+            "doc": {},
+            "doc_id": doc_id,
+            "idx": choice,
+            "label": 0,
+            "request_type": "loglikelihood",
+            "request": {"context": "Question:", "continuation": continuation},
+        }
+        for doc_id in [0, 2]
+        for choice, continuation in enumerate([" A", " B"])
+    ]
+    monkeypatch.setattr(
+        "olmo_eval.tasks.load_oe_eval_requests",
+        lambda path, name, split: (None, [] if name == "empty" else requests),
+    )
+    tokenizer = HFTokenizer(
+        "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
+        pad_token_id=0,
+        eos_token_id=0,
+    )
+    task = OEEvalTask(
+        tokenizer,
+        "test",
+        dataset_name=["first", "empty", "second"],
+        metric_type="acc",
+        fast_mc=fast_mc,
+    )
+    for _ in range(2):
+        assert sorted(task[index]["doc_id"] for index in range(len(task))) == (
+            [0, 2, 3, 5] if fast_mc else [0, 0, 2, 2, 3, 3, 5, 5]
+        )
+        assert task.collate_fn([task[0], task[-1]])["doc_id"].tolist() == [0, 5]
+        task.prep_examples()

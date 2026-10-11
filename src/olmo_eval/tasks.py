@@ -1585,11 +1585,12 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
         self._max_sequence_length: Optional[int] = None
 
     def prep_examples(self):
+        self.samples = []
         current_doc_id_offset = 0
-        max_doc_id = 0
+        max_doc_id = -1
         for requests in self.dataset:
-            current_doc_id_offset += max_doc_id
-            max_doc_id = 0  # Max doc id seen in this dataset
+            current_doc_id_offset += max_doc_id + 1
+            max_doc_id = -1  # Max doc id seen in this dataset
 
             new_samples = []
             for request in requests:
@@ -1733,7 +1734,7 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                 # Add fast MC samples to main samples list
                 new_samples = fast_mc_samples
 
-            self.samples = new_samples
+            self.samples.extend(new_samples)
 
     def doc_to_text(self, doc) -> str:
         del doc
