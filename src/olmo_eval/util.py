@@ -98,7 +98,7 @@ def get_world_size(group: Optional[dist.ProcessGroup] = None) -> int:
     if is_distributed():
         return dist.get_world_size(group)
     else:
-        return 0
+        return 1
 
 
 T = TypeVar("T")
