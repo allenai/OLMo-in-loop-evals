@@ -59,7 +59,19 @@ def test_fast_choices_match_ordinary_scoring(monkeypatch, tokenizer, task_class,
         dc_logits = torch.full((*batch["dc_input_ids"].shape, tokenizer.vocab_size), -1e8)
         dc_logits[:, :, [cat, cafe]] = torch.tensor(0.5).log()
         metric = ICLMetric(metric_type)
-        metric.update(batch, lm_logits=logits, dc_lm_logits=dc_logits)
+        split = len(task.samples) if fast_mc else 1
+        metric.update(
+            {key: value[:split] for key, value in batch.items()},
+            lm_logits=logits[:split],
+            dc_lm_logits=dc_logits[:split],
+        )
+        if not fast_mc:
+            assert all(torch.isnan(value) for value in metric.compute().values())
+            metric.update(
+                {key: value[split:] for key, value in batch.items()},
+                lm_logits=logits[split:],
+                dc_lm_logits=dc_logits[split:],
+            )
         results.append(metric.compute())
     assert results[0].keys() == results[1].keys()
     assert all(torch.allclose(value, results[1][key]) for key, value in results[0].items())

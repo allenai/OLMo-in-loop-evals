@@ -4,6 +4,15 @@ import torch
 from olmo_eval.metrics import ICLMetric
 
 
+@pytest.mark.parametrize("metric_type", ["acc", "f1", "len_norm", "pmi_dc", "ce_loss", "bpb"])
+def test_empty_metric_returns_nan(metric_type):
+    metric = ICLMetric(metric_type)
+    metric.update({}, lm_logits=None)
+    assert all(torch.isnan(value) for value in metric.compute().values())
+    metric.reset()
+    assert all(torch.isnan(value) for value in metric({}, lm_logits=None).values())
+
+
 @pytest.mark.parametrize("fast_mc", [False, True])
 def test_pmi_uses_log_probability_difference_and_raw_losses(fast_mc):
     batch = {
@@ -41,11 +50,11 @@ def test_pmi_uses_log_probability_difference_and_raw_losses(fast_mc):
 def test_metric_accuracy_versions_use_their_own_predictions(metric_type):
     metric = ICLMetric(metric_type)
     metric.update({}, lm_logits=None)
-    metric.labels = [(0, 0, 0)]
+    metric.labels = [(0, 0, 0), (1, 0, 0, 2)]
     for name in metric.metric_state:
         if name != "labels":
             score = 1.0 if name.endswith("_no_leading_space") else -1.0
-            setattr(metric, name, [(0, 0, 0.0), (0, 1, score)])
+            setattr(metric, name, [(0, 0, 0.0), (0, 1, score), (1, 0, 0.0)])
     results = metric.compute()
     assert results[f"{metric_type}_v1"].item() == 0.0
     assert results[f"{metric_type}_v2"].item() == 1.0
@@ -75,6 +84,7 @@ def test_metric_reset_clears_cached_results(metric_type, fast_mc):
         logits = logits[:1]
     metric = ICLMetric(metric_type)
     metric.update({}, lm_logits=None)
+    assert all(torch.isnan(value) for value in metric.compute().values())
     metric.update(batch, lm_logits=logits, dc_lm_logits=torch.zeros_like(logits))
     before_reset = metric.compute()
     assert all(torch.isfinite(value) for value in before_reset.values())

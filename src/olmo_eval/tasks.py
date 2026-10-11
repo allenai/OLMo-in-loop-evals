@@ -143,6 +143,7 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
                         {
                             "doc_id": doc_id,
                             "cont_id": cont_id,
+                            "num_choices": len(continuations),
                             "ctx": ctx,
                             "continuation": continuation,
                             "ctx_len": actual_ctx_len,
@@ -345,6 +346,9 @@ class ICLMultiChoiceTaskDataset(metaclass=abc.ABCMeta):
             "dc_input_ids": torch.stack(dc_queries),
             "label_id": torch.LongTensor(label_ids),
         }
+
+        if all("num_choices" in sample for sample in data):
+            batch["num_choices"] = torch.LongTensor([sample["num_choices"] for sample in data])
 
         if self.fast_mc:
             # Pad choice_ids with -1 (for Qs with different numbers of choices)
@@ -598,6 +602,7 @@ class WinoGrande(ICLMultiChoiceTaskDataset):
                     {
                         "doc_id": doc_id,
                         "cont_id": cont_id,
+                        "num_choices": len(ctxs),
                         "ctx": ctx,
                         "continuation": continuation,
                         "ctx_len": len(query) - len(continuation) + 1,
@@ -1702,13 +1707,17 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                     }
                 )
 
+            samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
+            for sample in new_samples:
+                samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
+            for doc_samples in samples_by_doc.values():
+                num_choices = max(sample["cont_id"] for sample in doc_samples) + 1
+                for sample in doc_samples:
+                    sample["num_choices"] = num_choices
+
             # Fast MCQA:
             # Only pass a single request, and group together all continuations as tokens
             if self.fast_mc:
-                samples_by_doc: Dict[int, List[Dict[str, Any]]] = {}
-                for sample in new_samples:
-                    samples_by_doc.setdefault(sample["doc_id"], []).append(sample)
-
                 # Create new samples list for fast MC
                 fast_mc_samples = []
 

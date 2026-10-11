@@ -44,7 +44,7 @@ class ICLMetric(Metric):
         self.loglikelihoods: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.celosses: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
         self.bpbs: List[Tuple[Optional[int], Optional[int], Optional[float]]] = []
-        self.labels: List[Tuple[Optional[int], Optional[int], Optional[int]]] = []
+        self.labels: List[Tuple[Optional[int], ...]] = []
 
         self.loglikelihoods_no_leading_space: List[
             Tuple[Optional[int], Optional[int], Optional[float]]
@@ -169,7 +169,8 @@ class ICLMetric(Metric):
                 else:
                     raise ValueError(self.metric_type)
 
-                self.labels.append((doc_id, _cont_id, int(batch["label_id"][idx])))
+                num_choices = int(batch["num_choices"][idx]) if "num_choices" in batch else None
+                self.labels.append((doc_id, _cont_id, int(batch["label_id"][idx]), num_choices))
                 self.loglikelihoods.append((doc_id, _cont_id, float(log_likelihood)))
                 self.celosses.append((doc_id, _cont_id, float(celoss)))
                 self.bpbs.append((doc_id, _cont_id, float(bpb)))
@@ -190,18 +191,22 @@ class ICLMetric(Metric):
         loglikelihood_dict: Dict[int, Dict[int, float]] = {}
         loglikelihood_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
         label_dict: Dict[int, int] = {}
+        expected_choices: Dict[int, int] = {}
         celoss_dict: Dict[int, Dict[int, float]] = {}
         celoss_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
         bpb_dict: Dict[int, Dict[int, float]] = {}
         bpb_no_leading_space_dict: Dict[int, Dict[int, float]] = {}
 
         # collect labels
-        for doc_id, cont_id, label_id in self.labels:
+        for entry in self.labels:
+            doc_id, cont_id, label_id = entry[:3]
             if doc_id is None or cont_id is None or label_id is None:
                 continue
 
             if doc_id not in label_dict:
                 label_dict[doc_id] = label_id
+            if len(entry) > 3 and entry[3] is not None:
+                expected_choices[doc_id] = entry[3]
 
         # collect loglikelihoods
         for doc_id, cont_id, loglikelihood in self.loglikelihoods:
@@ -291,6 +296,10 @@ class ICLMetric(Metric):
         for doc_id in loglikelihood_dict:
             # each doc_id might have a different number of continuation
             num_continuations = len(loglikelihood_dict[doc_id].keys())
+            if num_continuations != expected_choices.get(doc_id, num_continuations):
+                continue
+            if not 0 <= label_dict[doc_id] < num_continuations:
+                continue
             loglikelihoods = torch.tensor([-float("inf")] * num_continuations)
             loglikelihoods_no_leading_space = torch.tensor([-float("inf")] * num_continuations)
             celosses = torch.tensor([float("inf")] * num_continuations)
@@ -357,6 +366,18 @@ class ICLMetric(Metric):
                         label_dict[doc_id]
                     ].item()
                 )
+
+        if not (correct or celoss or bpb or preds):
+            names = (
+                [self.metric_type]
+                if self.metric_type in ["f1", "ce_loss", "bpb"]
+                else [self.metric_type, "ce_loss", "bpb", "soft", "soft_log"]
+            )
+            return {
+                f"{name}_v{version}": torch.tensor(float("nan"))
+                for name in names
+                for version in [1, 2]
+            }
 
         # v1 vs. v2 corresponds to whether we add a 1 to the num chars or num bytes when normalizing the answer length. See https://github.com/allenai/OLMo-in-loop-evals/pull/6
 
