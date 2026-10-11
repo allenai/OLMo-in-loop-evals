@@ -1563,9 +1563,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
             config, requests = load_oe_eval_requests(self.dataset_path, ds_name, split)
             requests_list.append(requests)
             configs.append(config)
-        if metric_type is not None:
-            self.metric_type = metric_type
-        else:
+        self.metric_type = metric_type
+        if metric_type is None:
             # Use metric type from associated task config
             for config in configs:
                 if config is not None:
@@ -1578,6 +1577,8 @@ class OEEvalTask(ICLMultiChoiceTaskDataset):
                                 f"Conflicting metric types: {self.metric_type} and {metric_type}"
                             )
                         self.metric_type = metric_type
+        if self.metric_type is None:
+            raise ValueError("No metric type found in task configs; pass metric_type explicitly")
         self.dataset = requests_list
 
         # prep examples

@@ -63,7 +63,8 @@ def test_build_task(label: str):
 
 
 @pytest.mark.parametrize("fast_mc", [False, True])
-def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc):
+@pytest.mark.parametrize("infer_metric", [False, True])
+def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc, infer_metric):
     requests = [
         {
             "doc": {},
@@ -78,7 +79,10 @@ def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc):
     ]
     monkeypatch.setattr(
         "olmo_eval.tasks.load_oe_eval_requests",
-        lambda path, name, split: (None, [] if name == "empty" else requests),
+        lambda path, name, split: (
+            {"task_config": {"primary_metric": "acc_raw"}},
+            [] if name == "empty" else requests,
+        ),
     )
     tokenizer = HFTokenizer(
         "tokenizers/allenai_eleuther-ai-gpt-neox-20b-pii-special.json",
@@ -89,9 +93,14 @@ def test_oe_task_preserves_multiple_datasets(monkeypatch, fast_mc):
         tokenizer,
         "test",
         dataset_name=["first", "empty", "second"],
-        metric_type="acc",
+        metric_type=None if infer_metric else "acc",
         fast_mc=fast_mc,
     )
+    assert task.metric_type == "acc"
+    if infer_metric:
+        monkeypatch.setattr("olmo_eval.tasks.load_oe_eval_requests", lambda *args: (None, []))
+        with pytest.raises(ValueError, match="pass metric_type explicitly"):
+            OEEvalTask(tokenizer, "test")
     for _ in range(2):
         assert sorted(task[index]["doc_id"] for index in range(len(task))) == (
             [0, 2, 3, 5] if fast_mc else [0, 0, 2, 2, 3, 3, 5, 5]
